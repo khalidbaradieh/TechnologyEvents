@@ -1,0 +1,3330 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الأحداث التقنية</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #F0D080;
+    --dark: #0D0D0F;
+    --dark-2: #141418;
+    --dark-3: #1C1C22;
+    --dark-4: #252530;
+    --text: #F0EDE6;
+    --text-muted: #8A8799;
+    --text-dim: #5C5A6B;
+    --accent: #4A9EFF;
+    --red: #FF5252;
+    --green: #3DDC84;
+    --border: rgba(201,168,76,0.15);
+    --border-dim: rgba(255,255,255,0.06);
+    --ticker-speed: 20s;
+    --ticker-enabled: running;
+  }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Cairo', 'Tajawal', sans-serif;
+    min-height: 100vh;
+    direction: rtl;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ─── NAVBAR ─── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 600;
+    background: rgba(13,13,15,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .nav-logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--gold), #8B6914);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--dark);
+  }
+
+  .nav-logo-text {
+    font-size: 20px;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--gold-light), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    list-style: none;
+    flex-shrink: 1;
+    overflow: hidden;
+  }
+
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .nav-links a:hover, .nav-links a.active {
+    color: var(--text);
+    background: var(--dark-3);
+  }
+
+  .nav-links a.active { color: var(--gold); }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--dark-3);
+    border: 1px solid var(--border-dim);
+    border-radius: 10px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .search-box:hover { border-color: var(--border); }
+
+  .search-box input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 13px;
+    width: 160px;
+    direction: rtl;
+  }
+
+  .search-box input::placeholder { color: var(--text-dim); }
+
+  .btn-subscribe {
+    background: linear-gradient(135deg, var(--gold), #A07020);
+    color: var(--dark);
+    border: none;
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-subscribe:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* ─── TICKER ─── */
+  .ticker {
+    background: linear-gradient(90deg, var(--gold) 0%, #A07020 100%);
+    padding: 8px 0; overflow: hidden;
+    display: flex; align-items: center;
+  }
+  .ticker-label {
+    background: var(--dark); color: var(--gold);
+    font-size: 12px; font-weight: 700;
+    padding: 4px 16px; white-space: nowrap; z-index: 1; letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+  .ticker-track { overflow: hidden; flex: 1; position: relative; }
+  .ticker-inner {
+    display: flex; gap: 0; white-space: nowrap;
+    will-change: transform; position: relative;
+  }
+  .ticker-inner span {
+    color: var(--dark); font-size: 13px; font-weight: 600;
+    white-space: nowrap; flex-shrink: 0; padding: 0 30px;
+  }
+  .ticker-inner span::before {
+    content: '◆'; margin-left: 8px; font-size: 7px; opacity: 0.6;
+  }
+
+  /* ─── AD BANNERS ─── */
+  .ad-banner {
+    max-width: 1280px; margin: 0 auto; padding: 0 2rem 16px;
+    display: none;
+  }
+  #ad-top { margin-top: 20px; margin-bottom: 20px; }
+  #ad-bottom { margin-top: 0; margin-bottom: 8px; }
+  .ad-banner.active { display: block; }
+  .ad-banner-inner {
+    border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--border-dim);
+    background: var(--dark-3);
+    min-height: 80px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; cursor: pointer;
+  }
+  .ad-banner-inner img, .ad-banner-inner video {
+    width: 100%; max-height: 250px; object-fit: cover; display: block;
+  }
+  .ad-banner-text {
+    padding: 16px 24px; text-align: center;
+    font-size: 15px; color: var(--text); line-height: 1.6; width: 100%;
+  }
+
+
+  /* ─── BREAKING BAR ─── */
+  #breaking-bar {
+    display: none;
+    background: var(--red);
+    padding: 0;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.4s ease, padding 0.4s ease;
+    position: relative;
+    z-index: 90;
+  }
+
+  #breaking-bar.visible {
+    display: block;
+    max-height: 500px;
+    padding: 0;
+  }
+  .breaking-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .breaking-row:last-child { border-bottom: none; }
+
+  .breaking-label {
+    background: rgba(0,0,0,0.35);
+    color: white;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 4px 16px;
+    white-space: nowrap;
+    letter-spacing: 1.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .breaking-pulse {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: white;
+    animation: pulse 1s infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:0.4; transform:scale(0.7); }
+  }
+
+  .breaking-text {
+    flex: 1;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 2px 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .breaking-countdown {
+    background: rgba(0,0,0,0.3);
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-family: monospace;
+    letter-spacing: 1px;
+  }
+
+  .breaking-close {
+    background: rgba(0,0,0,0.25);
+    border: none;
+    color: white;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 8px; margin-right: 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .breaking-close:hover { background: rgba(0,0,0,0.45); }
+
+  /* ─── ARTICLE PAGE ─── */
+  #article-page {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--dark);
+    z-index: 100;
+    overflow-y: auto;
+    animation: fadeIn 0.3s ease;
+    padding-top: 64px; /* leave room for sticky nav */
+  }
+
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+  .article-topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(13,13,15,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-dim);
+    padding: 0 2rem;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 10;
+  }
+
+  .btn-back {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--dark-3);
+    border: 1px solid var(--border-dim);
+    color: var(--text-muted);
+    padding: 7px 16px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .btn-back:hover { border-color: var(--border); color: var(--text); }
+
+  .article-topbar-title {
+    font-size: 14px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
+
+  .article-wrap {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 48px 2rem 80px;
+  }
+
+  .article-cat {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+  }
+
+  .article-title {
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1.4;
+    color: var(--text);
+    margin-bottom: 18px;
+  }
+
+  .article-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 13px;
+    color: var(--text-dim);
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-dim);
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .article-hero-img {
+    width: 100%; height: 340px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 100px; margin-bottom: 32px; overflow: hidden;
+  }
+  .article-hero-img img { width:100%; height:100%; object-fit:cover; }
+
+  .article-body {
+    font-size: 17px;
+    line-height: 1.9;
+    color: var(--text-muted);
+  }
+
+  .article-body p { margin-bottom: 20px; }
+
+  .article-body h2 {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    margin: 32px 0 14px;
+  }
+
+  .article-body blockquote {
+    border-right: 4px solid var(--gold);
+    padding: 14px 20px;
+    background: var(--dark-2);
+    border-radius: 0 12px 12px 0;
+    margin: 24px 0;
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 600;
+    font-style: italic;
+  }
+
+  .article-share {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-dim);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .article-share-label { font-size: 14px; color: var(--text-muted); }
+
+  .share-btn {
+    padding: 7px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border-dim);
+    background: var(--dark-2);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .share-btn:hover { border-color: var(--border); color: var(--text); }
+
+  /* ─── HERO ─── */
+  .hero {
+    padding: 48px 2rem 32px;
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .hero-main {
+    background: var(--dark-2);
+    border: 1px solid var(--border-dim);
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hero-main:hover { border-color: var(--border); transform: translateY(-2px); }
+
+  .hero-img {
+    width: 100%;
+    height: 360px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-img-gfx {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 30% 50%, rgba(74,158,255,0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(201,168,76,0.1) 0%, transparent 40%);
+  }
+
+  .hero-img svg {
+    width: 200px;
+    height: 200px;
+    opacity: 0.15;
+  }
+
+  .hero-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: var(--red);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .hero-content {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 20px 24px 24px;
+    background: linear-gradient(0deg, rgba(13,13,15,0.96) 0%, rgba(13,13,15,0.7) 60%, transparent 100%);
+    z-index: 2;
+  }
+
+  .hero-category {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .hero-title {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.4;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .hero-excerpt {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .hero-meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar-stack { display: flex; flex-direction: column; gap: 12px; }
+
+  .sidebar-card {
+    background: var(--dark-2);
+    border: 1px solid var(--border-dim);
+    border-radius: 14px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    max-height: 100px;
+    overflow: hidden;
+  }
+
+  .sidebar-card:hover { border-color: var(--border); transform: translateX(-2px); }
+
+  .sidebar-num {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--dark-4);
+    line-height: 1;
+    min-width: 24px;
+    text-align: center;
+    margin-top: 2px;
+    font-family: 'Tajawal', sans-serif;
+    flex-shrink: 0;
+  }
+
+  .sidebar-card-content { flex: 1; min-width: 0; }
+
+  /* ─── SIDEBAR THUMBNAIL ─── */
+  .sidebar-thumb {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+  .sidebar-thumb img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+
+  .sidebar-cat {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+  }
+
+  .sidebar-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 5px;
+  }
+
+  .sidebar-time { font-size: 12px; color: var(--text-dim); }
+
+  /* ─── SECTION HEADER ─── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::before {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 22px;
+    background: var(--gold);
+    border-radius: 2px;
+  }
+
+  .section-link {
+    font-size: 13px;
+    color: var(--gold);
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .section-link:hover { opacity: 0.7; }
+
+  /* ─── CATEGORIES ─── */
+  .cats-strip {
+    max-width: 1280px; margin: 0 auto 36px; padding: 0 2rem;
+    display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none;
+    position: sticky; top: 64px; z-index: 80;
+    background: var(--dark);
+    padding-top: 12px !important; padding-bottom: 12px !important;
+  }
+  .cats-strip::-webkit-scrollbar { display: none; }
+
+  .cat-pill {
+    background: var(--dark-3);
+    border: 1px solid var(--border-dim);
+    color: var(--text-muted);
+    padding: 8px 18px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cat-pill:hover, .cat-pill.active {
+    background: var(--dark-4);
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .cat-pill.active { color: var(--gold); border-color: var(--border); }
+
+  .cat-pill .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  /* ─── STATS ─── */
+  .stats-bar {
+    max-width: 1280px;
+    margin: 0 auto 36px;
+    padding: 0 2rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: var(--dark-2);
+    border: 1px solid var(--border-dim);
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .stat-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .stat-icon-gold { background: rgba(201,168,76,0.12); }
+  .stat-icon-blue { background: rgba(74,158,255,0.12); }
+  .stat-icon-green { background: rgba(61,220,132,0.12); }
+  .stat-icon-purple { background: rgba(160,120,255,0.12); }
+
+  .stat-val { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 3px; }
+  .stat-lbl { font-size: 12px; color: var(--text-muted); }
+
+  /* ─── GRID ─── */
+  .grid-section {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem 40px;
+  }
+
+  .news-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .news-card {
+    background: var(--dark-2);
+    border: 1px solid var(--border-dim);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .news-card:hover { border-color: var(--border); transform: translateY(-3px); }
+
+  .card-img {
+    width: 100%;
+    height: 180px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-img-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    transition: transform 0.4s;
+  }
+
+  .news-card:hover .card-img-inner { transform: scale(1.05); }
+
+  .card-body { padding: 18px; }
+
+  .card-tags { display: flex; gap: 6px; margin-bottom: 10px; }
+
+  .tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 5px;
+    letter-spacing: 0.3px;
+  }
+
+  .tag-blue   { background: rgba(74,158,255,0.12); color: #6BB5FF; }
+  .tag-gold   { background: rgba(201,168,76,0.12);  color: var(--gold); }
+  .tag-green  { background: rgba(61,220,132,0.12);  color: var(--green); }
+  .tag-red    { background: rgba(255,82,82,0.12);   color: #FF7070; }
+  .tag-purple { background: rgba(160,120,255,0.12); color: #B090FF; }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+
+  .card-excerpt {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-dim);
+  }
+
+  .card-author { display: flex; align-items: center; gap: 8px; }
+
+  .author-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .card-author-name { font-size: 12px; color: var(--text-muted); }
+  .card-time { font-size: 12px; color: var(--text-dim); }
+
+  /* ─── WIDE CARD ─── */
+  .wide-card {
+    background: var(--dark-2);
+    border: 1px solid var(--border-dim);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    margin-bottom: 20px;
+  }
+
+  .wide-card:hover { border-color: var(--border); transform: translateY(-2px); }
+
+  .wide-img {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 72px;
+    transition: transform 0.4s;
+  }
+
+  .wide-card:hover .wide-img { transform: scale(1.03); }
+
+  .wide-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .wide-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+
+  .wide-excerpt {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+
+  /* ─── NEWSLETTER ─── */
+  .newsletter {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem 48px;
+  }
+
+  .newsletter-inner {
+    background: linear-gradient(135deg, var(--dark-3) 0%, #1A1A28 100%);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 40px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .newsletter-inner::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    left: -60px;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .newsletter-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .newsletter-sub { font-size: 14px; color: var(--text-muted); }
+
+  .newsletter-form { display: flex; gap: 10px; align-items: center; }
+
+  .newsletter-input {
+    background: var(--dark-2);
+    border: 1px solid var(--border-dim);
+    border-radius: 10px;
+    padding: 10px 16px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    width: 240px;
+    outline: none;
+    transition: border-color 0.2s;
+    direction: rtl;
+  }
+
+  .newsletter-input:focus { border-color: var(--border); }
+  .newsletter-input::placeholder { color: var(--text-dim); }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--dark-2);
+    border-top: 1px solid var(--border-dim);
+    padding: 40px 2rem 24px;
+  }
+
+  .footer-inner { max-width: 1280px; margin: 0 auto; }
+
+  .footer-top {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border-dim);
+    margin-bottom: 24px;
+  }
+
+  .footer-brand .nav-logo { margin-bottom: 14px; display: inline-flex; }
+  .footer-brand p { font-size: 13px; color: var(--text-muted); line-height: 1.7; max-width: 280px; }
+
+  .footer-col-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+
+  .footer-links { list-style: none; }
+  .footer-links li { margin-bottom: 8px; }
+  .footer-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .footer-links a:hover { color: var(--text); }
+
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-copy { font-size: 12px; color: var(--text-dim); }
+
+  .footer-socials { display: flex; gap: 10px; }
+
+  .social-btn {
+    width: 34px;
+    height: 34px;
+    background: var(--dark-3);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+
+  .social-btn:hover { border-color: var(--border); background: var(--dark-4); color: var(--text); }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero         { animation: fadeUp 0.5s ease forwards; }
+  .cats-strip   { animation: fadeUp 0.6s ease 0.1s both; }
+  .stats-bar    { animation: fadeUp 0.6s ease 0.15s both; }
+  .grid-section { animation: fadeUp 0.6s ease 0.2s both; }
+  .newsletter   { animation: fadeUp 0.6s ease 0.25s both; }
+
+  /* ─── LIGHT THEME ─── */
+  body.light {
+    --dark: #F8F6F0;
+    --dark-2: #FFFFFF;
+    --dark-3: #F0EDE4;
+    --dark-4: #E5E0D5;
+    --text: #1A1812;
+    --text-muted: #5A5648;
+    --text-dim: #9A9488;
+    --border: rgba(180,150,60,0.2);
+    --border-dim: rgba(0,0,0,0.08);
+    --gold: #A07828;
+    --gold-light: #C9A84C;
+  }
+  body.light nav { background: rgba(248,246,240,0.95); }
+  body.light .ticker { background: linear-gradient(90deg, #A07828 0%, #6B5010 100%); }
+  body.light .ticker-label { background: #F8F6F0; }
+  body.light .cat-pill { background: #F0EDE4; }
+  body.light .hero-main, body.light .news-card, body.light .wide-card,
+  body.light .sidebar-card, body.light .stat-card,
+  body.light .newsletter-inner { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  body.light footer { background: #EEEBE3; }
+
+  /* ─── ENGLISH / LTR MODE ─── */
+  body.english {
+    direction: ltr;
+    font-family: 'Segoe UI', Arial, sans-serif;
+  }
+  body.english nav, body.english .hero, body.english .cats-strip,
+  body.english .stats-bar, body.english .grid-section, body.english .newsletter,
+  body.english footer { direction: ltr; }
+  body.english .ticker-inner span::before { margin-left: 0; margin-right: 8px; }
+
+  /* ─── THEME/LANG TOGGLE BTNS ─── */
+  .theme-btn {
+    background: var(--dark-3);
+    border: 1px solid var(--border-dim);
+    color: var(--text-muted);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .theme-btn:hover { border-color: var(--border); color: var(--text); }
+  .theme-btn.active { background: rgba(201,168,76,0.12); color: var(--gold); border-color: var(--border); }
+
+  /* ─── SCROLL TO TOP ─── */
+  #scroll-top {
+    position: fixed;
+    bottom: 28px; left: 24px;
+    width: 44px; height: 44px;
+    background: var(--gold);
+    border: none; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 900;
+    cursor: pointer; z-index: 600;
+    opacity: 0; transform: translateY(16px);
+    transition: all 0.3s; color: var(--dark);
+    box-shadow: 0 4px 16px rgba(201,168,76,0.3);
+  }
+  #scroll-top.visible { opacity: 1; transform: translateY(0); }
+  #scroll-top:hover { transform: translateY(-2px); }
+
+
+  /* ─── READING PROGRESS BAR ─── */
+  #reading-progress {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold), #FF9A3C);
+    transform-origin: right;
+    transform: scaleX(0);
+    z-index: 9999;
+    transition: transform 0.1s linear;
+    display: none;
+  }
+
+  /* ─── TRENDING BADGE ─── */
+  .trending-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, rgba(255,82,82,0.15), rgba(255,154,60,0.15));
+    border: 1px solid rgba(255,82,82,0.2);
+    color: #FF7070;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ─── READING TIME ─── */
+  .read-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--dark-3);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  /* ─── ARTICLE IMPROVED ─── */
+  .article-body img {
+    max-width: 100%;
+    border-radius: 12px;
+    margin: 16px 0;
+  }
+  .article-body iframe {
+    max-width: 100%;
+    border-radius: 12px;
+  }
+
+  /* ─── VIEWS / SHARE COUNTER ─── */
+  .views-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--dark-3);
+    padding: 3px 10px;
+    border-radius: 20px;
+    cursor: default;
+  }
+
+  /* ─── HERO THUMBNAIL SUPPORT ─── */
+  .hero-img.has-thumb {
+    background: none !important;
+  }
+  .hero-img.has-thumb img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+
+  /* ─── CARD THUMBNAIL ─── */
+  .card-img-inner img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+
+
+  /* ─── TRENDING NEWS ─── */
+  #trending-section {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem 32px;
+  }
+  .trending-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .trending-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .trending-scroll {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .trending-scroll::-webkit-scrollbar { display: none; }
+  .trending-card {
+    flex-shrink: 0;
+    width: 200px;
+    height: 240px;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    scroll-snap-align: start;
+    transition: transform .2s;
+  }
+  .trending-card:hover { transform: scale(1.02); }
+  .trending-card-bg {
+    position: absolute;
+    inset: 0;
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+  }
+  .trending-card-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 36px 12px 12px;
+    background: linear-gradient(0deg, rgba(0,0,0,.9) 0%, transparent 100%);
+  }
+  .trending-card-cat {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: .5px;
+    margin-bottom: 4px;
+  }
+  .trending-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .trending-nav-btn {
+    background: var(--dark-3);
+    border: 1px solid var(--border-dim);
+    color: var(--text-muted);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all .2s;
+  }
+  .trending-nav-btn:hover { background: var(--dark-4); color: var(--text); }
+
+  /* ─── SMOOTH IMAGE LOADING ─── */
+  .card-img-inner img, .hero-img img, .sidebar-thumb img, .article-hero-img img {
+    transition: opacity 0.3s ease;
+    opacity: 0;
+  }
+  .card-img-inner img.loaded, .hero-img img.loaded, .sidebar-thumb img.loaded, .article-hero-img img.loaded {
+    opacity: 1;
+  }
+
+  /* ─── RESPONSIVE — TABLET 1024px ─── */
+  @media (max-width: 1024px) {
+    .hero { grid-template-columns: 1fr; gap: 16px; padding: 32px 1.5rem 24px; }
+    .sidebar-stack { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .news-grid { grid-template-columns: repeat(2, 1fr); }
+    .footer-top { grid-template-columns: 1fr 1fr; gap: 28px; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .hero-img { height: 280px; }
+    .wide-card { grid-template-columns: 240px 1fr; }
+    #all-news-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ─── RESPONSIVE — MOBILE 768px ─── */
+  @media (max-width: 768px) {
+    nav { padding: 0 1rem; height: 58px; }
+    .nav-hamburger { display: block !important; }
+    .nav-hamburger { display: flex !important; flex-direction: column; justify-content: center; gap: 4px; }
+    .nav-links { display: none; }
+    .nav-links.mobile-open {
+      display: flex !important;
+      flex-direction: column;
+      position: fixed;
+      top: 58px; right: 0; left: 0;
+      background: rgba(13,13,15,0.98);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 0 20px;
+      z-index: 200;
+      gap: 2px;
+    }
+    .nav-links.mobile-open li { width: 100%; }
+    .nav-links.mobile-open a {
+      display: block;
+      padding: 12px 24px;
+      font-size: 15px;
+      border-radius: 0;
+      border-right: 3px solid transparent;
+    }
+    .nav-links.mobile-open a.active { border-right-color: var(--gold); }
+    .nav-logo-text { font-size: 17px; }
+    .search-box { display: none; }
+    .hero { padding: 20px 1rem 16px; }
+    .hero-img { height: 220px; }
+    .hero-title { font-size: 20px; }
+    .hero-content { padding: 16px; }
+    .sidebar-stack { grid-template-columns: 1fr; gap: 8px; }
+    .cats-strip { padding: 0 1rem; padding-top: 10px !important; padding-bottom: 10px !important; }
+    .stats-bar { padding: 0 1rem; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .grid-section { padding: 0 1rem 24px; }
+    .news-grid { grid-template-columns: 1fr; }
+    .wide-card { grid-template-columns: 1fr; }
+    .wide-img { height: 160px; }
+    .newsletter { padding: 0 1rem 28px; }
+    .newsletter-inner { grid-template-columns: 1fr; gap: 16px; padding: 20px; }
+    .newsletter-form { flex-direction: column; width: 100%; }
+    .newsletter-input { width: 100%; }
+    .footer-top { grid-template-columns: 1fr 1fr; gap: 20px; }
+    .footer-brand p { display: none; }
+    .ad-banner { padding: 0 1rem 12px; }
+    .article-wrap { padding: 28px 1rem 60px; }
+    .article-title { font-size: 22px; }
+    .article-hero-img { height: 220px; }
+    #all-news-grid { grid-template-columns: 1fr; }
+    .sidebar-card { padding: 12px; }
+    .sidebar-thumb { width: 44px; height: 44px; font-size: 18px; }
+  }
+
+  /* ─── RESPONSIVE — SMALL MOBILE 480px ─── */
+  @media (max-width: 480px) {
+    .hero { padding: 14px 0.75rem 12px; }
+    .hero-img { height: 180px; }
+    .hero-title { font-size: 17px; }
+    .stats-bar { grid-template-columns: 1fr 1fr; padding: 0 0.75rem; }
+    .stat-val { font-size: 18px; }
+    .grid-section { padding: 0 0.75rem 20px; }
+    .cats-strip { padding: 0 0.75rem; }
+    .footer-top { grid-template-columns: 1fr; gap: 16px; }
+    .newsletter-inner { padding: 16px; }
+    .btn-subscribe { display: none; }
+    .nav-right { gap: 6px; }
+    .sidebar-stack { gap: 6px; }
+    .card-title { font-size: 14px; }
+    .news-card .card-body { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── SCROLL TO TOP ─── -->
+<div id="reading-progress"></div>
+<button id="scroll-top" onclick="scrollToTop()" title="العودة للأعلى">↑</button>
+
+<!-- ─── NAVBAR ─── -->
+<nav>
+  <a class="nav-logo" href="#" onclick="clearCatFilter();window.scrollTo({top:0,behavior:'smooth'});return false">
+    <div class="nav-logo-icon">ت</div>
+    <span class="nav-logo-text">الأحداث التقنية</span>
+  </a>
+
+  <ul class="nav-links" id="nav-links">
+    <li><a href="#" class="active" id="nav-all" onclick="_closeMobileNav();navFilter('الكل',this)">الرئيسية</a></li>
+    <li><a href="#" id="nav-allnews" onclick="openAllNewsPage();return false">📋 كل الأخبار</a></li>
+    <li><a href="#" onclick="navFilter('الذكاء الاصطناعي',this)">الذكاء الاصطناعي</a></li>
+    <li><a href="#" onclick="navFilter('الهواتف والأجهزة',this)">الهواتف والأجهزة</a></li>
+    <li><a href="#" onclick="navFilter('الفضاء والعلوم',this)">الفضاء والعلوم</a></li>
+    <li><a href="#" onclick="navFilter('الأمن الرقمي',this)">الأمن الرقمي</a></li>
+    <li><a href="#" onclick="navFilter('الشركات والأعمال',this)">الشركات والأعمال</a></li>
+  </ul>
+
+  <div class="nav-right">
+    <div class="search-box" id="search-box">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24" style="color:#5C5A6B"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="ابحث عن مقال..." oninput="liveSearch(this.value)">
+    </div>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="تبديل السمة">🌙 فاتح</button>
+    <button class="theme-btn" id="lang-btn" onclick="toggleLang()" title="Switch to English">EN</button>
+    <button class="btn-subscribe" id="subscribe-btn" onclick="document.getElementById('site-newsletter').scrollIntoView({behavior:'smooth'});setTimeout(()=>{const e=document.getElementById('nl-email-input');if(e)e.focus();},400)">اشترك مجاناً</button>
+  </div>
+  <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="القائمة" style="display:none;flex-direction:column;justify-content:center;background:none;border:none;cursor:pointer;padding:8px;gap:4px;flex-shrink:0">
+    <span style="display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.3s"></span>
+    <span style="display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.3s"></span>
+    <span style="display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.3s"></span>
+  </button>
+</nav>
+
+<!-- ─── TICKER: آخر الأخبار ─── -->
+<div class="ticker" id="site-ticker">
+  <div class="ticker-label">📰 آخر الأخبار</div>
+  <div class="ticker-track">
+    <div class="ticker-inner" id="ticker-inner-el">
+      <span>جوجل تطلق نموذج Gemini 2.0 بقدرات متطورة في التفكير متعدد الخطوات</span>
+      <span>آبل تؤكد موعد مؤتمر WWDC 2025 في يونيو المقبل</span>
+      <span>سام ألتمان يكشف عن خطط OpenAI لإطلاق GPT-5 قريباً</span>
+      <span>تسلا تختبر روبوت Optimus في مصانعها الإنتاجية</span>
+      <span>مايكروسوفت تستثمر 80 مليار دولار في البنية التحتية للذكاء الاصطناعي</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── BREAKING BAR (يظهر عند وجود خبر عاجل) ─── -->
+<div id="breaking-bar">
+  <div style="position:relative">
+    <div id="breaking-text"></div>
+    <button class="breaking-close" onclick="closeBreaking()" title="إغلاق" style="position:absolute;top:6px;left:8px">✕</button>
+  </div>
+</div>
+
+<!-- ─── ARTICLE OVERLAY PAGE ─── -->
+<div id="article-page">
+  <div class="article-topbar">
+    <button class="btn-back" onclick="closeArticle()">← العودة للرئيسية</button>
+    <div class="article-topbar-title" id="article-topbar-title"></div>
+  </div>
+  <div class="article-wrap">
+    <div class="article-cat" id="article-cat"></div>
+    <h1 class="article-title" id="article-title"></h1>
+    <div class="article-meta" id="article-meta"></div>
+    <div class="article-hero-img" id="article-hero-img"></div>
+    <div class="article-body" id="article-body"></div>
+
+    <!-- AD BANNER (article inline) -->
+    <div id="ad-article" style="display:none;margin:24px 0;border-radius:14px;overflow:hidden;border:1px solid var(--border-dim)">
+      <div style="font-size:10px;color:var(--text-dim);text-align:center;padding:5px 0;background:var(--dark-4);letter-spacing:1.5px;font-weight:600">إعلان</div>
+      <div id="ad-article-inner"></div>
+    </div>
+
+    <!-- SHARE (before suggested) -->
+    <div class="article-share">
+      <span class="article-share-label">شارك المقال:</span>
+      <button class="share-btn" onclick="shareArticle('twitter')">𝕏 تويتر</button>
+      <button class="share-btn" onclick="shareArticle('linkedin')">in لينكدإن</button>
+      <button class="share-btn" onclick="shareArticle('whatsapp')">💬 واتساب</button>
+      <button class="share-btn" onclick="shareArticle('copy')" id="copy-link-btn">🔗 نسخ الرابط</button>
+      <button class="share-btn" onclick="window.print()">🖨️ طباعة</button>
+      <button class="share-btn" id="bookmark-btn" onclick="toggleBookmark()" title="حفظ للقراءة لاحقاً">🔖 حفظ</button>
+    </div>
+
+    <!-- COMMENTS SECTION -->
+    <div class="article-comments-section" id="article-comments-section" style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border-dim);display:none">
+      <h3 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px">💬 التعليقات</h3>
+      <div style="background:var(--dark-3);border:1px solid var(--border-dim);border-radius:12px;padding:16px;margin-bottom:16px">
+        <textarea id="comment-input" placeholder="شارك رأيك في الخبر..." style="width:100%;background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:14px;resize:none;min-height:70px;direction:rtl;line-height:1.6"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <button onclick="submitComment()" style="background:var(--gold);color:var(--dark);border:none;padding:8px 20px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">إرسال التعليق</button>
+        </div>
+      </div>
+      <div id="comments-list" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+
+    <!-- SUGGESTED NEWS -->
+    <div id="article-suggested" style="margin-top:40px;padding-top:28px;border-top:1px solid var(--border-dim)">
+      <h3 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px"><span style="display:block;width:3px;height:20px;background:var(--gold);border-radius:2px"></span>أخبار ذات صلة</h3>
+      <div class="news-grid" id="suggested-grid" style="grid-template-columns:repeat(3,1fr);gap:16px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SEARCH / CATEGORY RESULTS (shown above hero when active) ─── -->
+<div id="cat-filter-section" style="display:none;max-width:1280px;margin:0 auto;padding:24px 2rem 0">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <h2 style="font-size:20px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:10px">
+      <span style="display:block;width:4px;height:22px;background:var(--gold);border-radius:2px"></span>
+      <span id="cat-filter-title">أخبار القسم</span>
+    </h2>
+    <button onclick="clearCatFilter()" style="font-size:13px;color:var(--text-dim);background:none;border:none;cursor:pointer">✕ إغلاق الفلتر</button>
+  </div>
+  <div class="news-grid" id="cat-filter-grid"></div>
+  <div id="cat-empty" style="display:none;text-align:center;padding:40px;color:var(--text-dim);font-size:14px">لا توجد أخبار في هذا القسم حالياً</div>
+</div>
+
+<!-- ─── AD BANNER TOP ─── -->
+<div class="ad-banner" id="ad-top"><div class="ad-banner-inner" id="ad-top-inner"><div class="ad-banner-text" id="ad-top-text"></div></div></div>
+
+<!-- ─── HERO ─── -->
+<div class="hero" id="site-hero">
+  <div class="hero-main" onclick="openArticleFromEl(this)" data-article-id="hero" style="min-height:420px">
+    <div class="hero-img" style="position:absolute;inset:0;height:100%">
+      <div class="hero-img-gfx"></div>
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="rgba(201,168,76,0.6)" stroke-width="1">
+        <circle cx="50" cy="50" r="30" stroke-dasharray="4 3"/>
+        <circle cx="50" cy="50" r="18"/>
+        <circle cx="50" cy="50" r="6" fill="rgba(201,168,76,0.4)" stroke="none"/>
+        <line x1="20" y1="50" x2="80" y2="50"/>
+        <line x1="50" y1="20" x2="50" y2="80"/>
+        <line x1="29" y1="29" x2="71" y2="71" stroke-dasharray="3 3"/>
+        <line x1="71" y1="29" x2="29" y2="71" stroke-dasharray="3 3"/>
+        <circle cx="80" cy="50" r="4" fill="rgba(74,158,255,0.5)" stroke="rgba(74,158,255,0.8)"/>
+        <circle cx="50" cy="20" r="3" fill="rgba(201,168,76,0.5)" stroke="rgba(201,168,76,0.8)"/>
+      </svg>
+      <div class="hero-badge">عاجل</div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-category">الذكاء الاصطناعي</div>
+      <h1 class="hero-title">ثورة حقيقية في عالم الذكاء الاصطناعي: GPT-5 يُحقق أداءً يفوق البشر في 87% من الاختبارات المعيارية</h1>
+      <p class="hero-excerpt">أعلنت شركة OpenAI الأمريكية عن إطلاق نموذجها الجديد GPT-5، الذي يُمثل قفزة نوعية في مجال معالجة اللغة الطبيعية والاستدلال المنطقي. يأتي هذا الإصدار بعد أكثر من عام من التطوير المكثف...</p>
+      <div class="hero-meta">
+        <span>✍️ أحمد الرشيدي</span>
+        <span>🕐 منذ ساعتين</span>
+        <span>👁 ٢٤٫٥ ألف مشاهدة</span>
+        <span>💬 ١٢٨ تعليق</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-stack">
+    <div class="sidebar-card">
+      <div class="sidebar-num">١</div>
+      <div class="sidebar-thumb" style="background:linear-gradient(135deg,#0a1a2a,#0d3a5c)">📱</div>
+      <div class="sidebar-card-content">
+        <div class="sidebar-cat">الهواتف الذكية</div>
+        <div class="sidebar-title">سامسونج تكشف عن Galaxy S25 Ultra بكاميرا 200 ميجابيكسل وذكاء اصطناعي متكامل</div>
+        <div class="sidebar-time">منذ ٣ ساعات</div>
+      </div>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-num">٢</div>
+      <div class="sidebar-thumb" style="background:linear-gradient(135deg,#2a0a0a,#5c1515)">🛡️</div>
+      <div class="sidebar-card-content">
+        <div class="sidebar-cat">الأمن الرقمي</div>
+        <div class="sidebar-title">ثغرة أمنية خطيرة تطال ملايين الأجهزة العاملة بنظام ويندوز 11</div>
+        <div class="sidebar-time">منذ ٥ ساعات</div>
+      </div>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-num">٣</div>
+      <div class="sidebar-thumb" style="background:linear-gradient(135deg,#1a0533,#2d1060)">🚀</div>
+      <div class="sidebar-card-content">
+        <div class="sidebar-cat">الفضاء والعلوم</div>
+        <div class="sidebar-title">SpaceX تُطلق صاروخ Starship في رحلته الخامسة نحو المدار الأرضي</div>
+        <div class="sidebar-time">منذ ٧ ساعات</div>
+      </div>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-num">٤</div>
+      <div class="sidebar-thumb" style="background:linear-gradient(135deg,#1a1a0a,#3d3a10)">💼</div>
+      <div class="sidebar-card-content">
+        <div class="sidebar-cat">الشركات والأعمال</div>
+        <div class="sidebar-title">آبل تتجاوز تقييم ٤ تريليون دولار للمرة الأولى في تاريخها</div>
+        <div class="sidebar-time">منذ ٩ ساعات</div>
+      </div>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-num">٥</div>
+      <div class="sidebar-thumb" style="background:linear-gradient(135deg,#0a2a1a,#0d5c30)">🔋</div>
+      <div class="sidebar-card-content">
+        <div class="sidebar-cat">السيارات الكهربائية</div>
+        <div class="sidebar-title">بطارية جديدة من CATL توفر شحناً كاملاً في أقل من ٥ دقائق</div>
+        <div class="sidebar-time">منذ ١١ ساعة</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── AD BANNER BOTTOM ─── -->
+<div class="ad-banner" id="ad-bottom"><div class="ad-banner-inner" id="ad-bottom-inner"><div class="ad-banner-text" id="ad-bottom-text"></div></div></div>
+
+<!-- ─── CATEGORIES ─── -->
+<div class="cats-strip" id="cats-strip">
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('اليوم',this)"><span class="dot" style="background:#FF5252"></span>أخبار اليوم</div>
+  <div class="cat-pill active" id="cat-pill-all" onclick="openAllNewsPage();return false"><span class="dot" style="background:var(--gold)"></span>الكل</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الذكاء الاصطناعي',this)"><span class="dot" style="background:#4A9EFF"></span>الذكاء الاصطناعي</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الهواتف والأجهزة',this)"><span class="dot" style="background:#3DDC84"></span>الهواتف والأجهزة</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الفضاء والعلوم',this)"><span class="dot" style="background:#B090FF"></span>الفضاء والعلوم</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الأمن الرقمي',this)"><span class="dot" style="background:#FF5252"></span>الأمن الرقمي</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الشركات والأعمال',this)"><span class="dot" style="background:#FF9A3C"></span>الشركات والأعمال</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الروبوتات',this)"><span class="dot" style="background:#40C8F0"></span>الروبوتات</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('ألعاب الفيديو',this)"><span class="dot" style="background:#F0C840"></span>ألعاب الفيديو</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('السيارات الكهربائية',this)"><span class="dot" style="background:#FF7070"></span>السيارات الكهربائية</div>
+</div>
+
+
+<!-- ─── TRENDING NEWS ─── -->
+<div id="trending-section" style="display:none;max-width:1280px;margin:0 auto;padding:0 2rem 8px">
+  <div class="trending-header">
+    <div class="trending-title">
+      <span style="display:block;width:4px;height:22px;background:var(--red);border-radius:2px"></span>
+      🔥 الأكثر تداولاً الآن
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="trending-nav-btn" onclick="scrollTrending(-1)" title="السابق">›</button>
+      <button class="trending-nav-btn" onclick="scrollTrending(1)" title="التالي">‹</button>
+    </div>
+  </div>
+  <div class="trending-scroll" id="trending-scroll"></div>
+</div>
+
+<!-- ─── STATS ─── -->
+<div class="stats-bar" id="stats-bar">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-gold">📰</div>
+    <div><div class="stat-val" id="stat-val-1">١٢٤+</div><div class="stat-lbl" id="stat-lbl-1">مقال اليوم</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-blue">👥</div>
+    <div><div class="stat-val" id="stat-val-2">٢.٣م</div><div class="stat-lbl" id="stat-lbl-2">قارئ نشط</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-green">✍️</div>
+    <div><div class="stat-val" id="stat-val-3">٤٨</div><div class="stat-lbl" id="stat-lbl-3">محرر متخصص</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-purple">🏆</div>
+    <div><div class="stat-val" id="stat-val-4">٦</div><div class="stat-lbl" id="stat-lbl-4">جوائز إعلامية</div></div>
+  </div>
+</div>
+
+<!-- ─── ARTICLES ─── -->
+<div class="grid-section">
+  <div class="section-header">
+    <h2 class="section-title" id="section-title-el">أبرز المقالات</h2>
+    <a href="#" class="section-link" onclick="openAllNewsPage();return false">عرض الكل ←</a>
+  </div>
+
+  <div class="wide-card" style="cursor:pointer" onclick="openArticleFromWide(this)">
+    <div class="wide-img" style="background:linear-gradient(135deg,#0d1b2a,#1b3a5e)">🤖</div>
+    <div class="wide-body">
+      <div class="card-tags">
+        <span class="tag tag-blue">الذكاء الاصطناعي</span>
+        <span class="tag tag-gold">تحليل معمق</span>
+      </div>
+      <div class="wide-title">كيف ستُعيد الروبوتات الذكية رسم ملامح سوق العمل العالمي بحلول ٢٠٣٠؟</div>
+      <p class="wide-excerpt">تقرير شامل يستعرض أحدث الدراسات والتوقعات حول تأثير الأتمتة والذكاء الاصطناعي على مئات الملايين من الوظائف حول العالم، مع تحليل للقطاعات الأكثر عرضةً للتحول الجذري.</p>
+      <div class="hero-meta">
+        <span>✍️ د. سارة المنصوري</span>
+        <span>🕐 ١٠ دقائق قراءة</span>
+        <span>👁 ٤٥ ألف مشاهدة</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="news-grid">
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#1a0533,#2d1060)">🚀</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-purple">الفضاء</span></div>
+        <div class="card-title">ناسا تعلن اكتشاف مواد عضوية معقدة على سطح المريخ لأول مرة</div>
+        <p class="card-excerpt">أعلنت وكالة ناسا عن اكتشاف مثير يعيد رسم خارطة البحث عن الحياة في الفضاء الخارجي.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(160,120,255,0.15);color:#B090FF">خ</div>
+            <span class="card-author-name">خالد العتيبي</span>
+          </div>
+          <span class="card-time">منذ ١ يوم</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#0a2a1a,#0d5c30)">🔋</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-green">السيارات الكهربائية</span></div>
+        <div class="card-title">بطارية جديدة من CATL توفر شحناً كاملاً في أقل من ٥ دقائق</div>
+        <p class="card-excerpt">طوّرت الشركة الصينية الرائدة تقنية ثورية قد تُنهي أزمة شحن السيارات الكهربائية نهائياً.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(61,220,132,0.15);color:#3DDC84">م</div>
+            <span class="card-author-name">منى الزهراني</span>
+          </div>
+          <span class="card-time">منذ ٢ يوم</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#2a0a0a,#5c1515)">🛡️</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-red">الأمن الرقمي</span></div>
+        <div class="card-title">هجوم إلكتروني ضخم يستهدف بنية المصارف الأوروبية التحتية</div>
+        <p class="card-excerpt">كشفت تقارير عن موجة هجمات غير مسبوقة تستخدم أدوات ذكاء اصطناعي لتجاوز أنظمة الحماية.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(255,82,82,0.15);color:#FF7070">ع</div>
+            <span class="card-author-name">عمر الحسيني</span>
+          </div>
+          <span class="card-time">منذ ٣ أيام</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#0a1a2a,#0d3a5c)">📱</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-blue">الهواتف الذكية</span></div>
+        <div class="card-title">آبل تختبر iPhone بشاشة قابلة للطي في تسريبات جديدة من المصنع</div>
+        <p class="card-excerpt">صور مسرّبة تكشف عن نموذج أولي من آيفون قابل للطي بتصميم مختلف عن منافسيه.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(74,158,255,0.15);color:#6BB5FF">ف</div>
+            <span class="card-author-name">فيصل الدوسري</span>
+          </div>
+          <span class="card-time">منذ ٤ أيام</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#1a1a0a,#3d3d10)">🎮</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-gold">ألعاب الفيديو</span></div>
+        <div class="card-title">PlayStation 6 رسمياً: سوني تؤكد الإطلاق في نهاية ٢٠٢٦ بقدرات 8K</div>
+        <p class="card-excerpt">سوني تكسر الصمت وتعلن تفاصيل مثيرة عن الجيل القادم من أقوى أجهزة الألعاب.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(201,168,76,0.15);color:var(--gold)">ن</div>
+            <span class="card-author-name">نورة السبيعي</span>
+          </div>
+          <span class="card-time">منذ ٥ أيام</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#1a0a2a,#3d1060)">🧬</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-purple">التقنية الحيوية</span></div>
+        <div class="card-title">ذكاء اصطناعي يكتشف علاجاً محتملاً لنوع نادر من السرطان في ٤٨ ساعة</div>
+        <p class="card-excerpt">شركة DeepMind تُحقق اختراقاً علمياً يُقصّر عملية البحث الدوائي من سنوات إلى أيام.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(160,120,255,0.15);color:#B090FF">ر</div>
+            <span class="card-author-name">رنا أبو عيشة</span>
+          </div>
+          <span class="card-time">منذ ٦ أيام</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── AD BANNER GRID (after main news grid) ─── -->
+<div class="ad-banner" id="ad-grid"><div class="ad-banner-inner" id="ad-grid-inner"></div></div>
+
+<!-- ─── SHOW MORE BUTTON (on main page, before newsletter) ─── -->
+<div id="show-more-wrap" style="display:none;max-width:1280px;margin:0 auto;padding:0 2rem 0">
+  <div id="show-more-grid" class="news-grid" style="margin-bottom:24px"></div>
+  <div style="text-align:center;padding:8px 0 36px">
+    <button id="show-more-btn" onclick="showMoreNews()" style="background:var(--dark-3);border:1px solid var(--border);color:var(--text-muted);padding:12px 40px;border-radius:12px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.3px">▾ عرض المزيد من الأخبار</button>
+  </div>
+</div>
+
+<!-- ─── ALL NEWS FULL PAGE (fixed overlay, opens when clicking كل الأخبار) ─── -->
+<div id="all-news-page" style="display:none;position:fixed;inset:0;background:var(--dark);z-index:100;overflow-y:auto;padding-top:64px">
+  <div style="position:sticky;top:0;z-index:10;background:rgba(13,13,15,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 2rem;height:64px;display:flex;align-items:center;gap:16px">
+    <button onclick="closeAllNewsPage()" style="background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;padding:0;line-height:1;flex-shrink:0" title="العودة">←</button>
+    <div style="font-size:16px;font-weight:700;color:var(--text);flex:1">📋 جميع الأخبار <span id="all-news-count" style="font-size:13px;color:var(--text-dim);font-weight:400"></span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select id="all-news-cat-filter" onchange="renderAllNewsPage()" style="background:var(--dark-3);border:1px solid var(--border-dim);border-radius:8px;padding:6px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none;cursor:pointer">
+        <option value="">كل الأقسام</option>
+      </select>
+      <input id="all-news-search" type="text" placeholder="🔍 ابحث..." oninput="renderAllNewsPage()" style="background:var(--dark-3);border:1px solid var(--border-dim);border-radius:8px;padding:6px 14px;color:var(--text);font-family:inherit;font-size:13px;outline:none;width:170px;direction:rtl">
+    </div>
+  </div>
+  <div style="max-width:1280px;margin:0 auto;padding:32px 2rem 60px">
+    <div class="news-grid" id="all-news-grid"></div>
+    <div id="all-news-empty" style="display:none;text-align:center;padding:60px;color:var(--text-dim)">لا توجد أخبار</div>
+  </div>
+</div>
+
+<!-- ─── NEWSLETTER ─── -->
+<div class="newsletter" id="site-newsletter">
+  <div class="newsletter-inner">
+    <div>
+      <div class="newsletter-title" id="newsletter-title-el">لا تفوّت أي خبر تقني 🔔</div>
+      <p class="newsletter-sub" id="newsletter-sub-el">اشترك في نشرتنا الأسبوعية واستقبل أهم أخبار التكنولوجيا مباشرةً في بريدك الإلكتروني</p>
+    </div>
+    <div class="newsletter-form">
+      <input type="email" class="newsletter-input" id="nl-email-input" placeholder="بريدك الإلكتروني..." onkeydown="if(event.key==='Enter')subscribeNewsletter()">
+      <button class="btn-subscribe" onclick="subscribeNewsletter()" style="padding:10px 22px;font-size:14px" id="nl-submit-btn">اشترك الآن</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── FOOTER ─── -->
+<footer id="site-footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a class="nav-logo" href="#" onclick="clearCatFilter();window.scrollTo({top:0,behavior:'smooth'});return false">
+          <div class="nav-logo-icon">ت</div>
+          <span class="nav-logo-text">الأحداث التقنية</span>
+        </a>
+        <p id="footer-desc">منصة إخبارية عربية متخصصة في أحدث أخبار التكنولوجيا والذكاء الاصطناعي والابتكار الرقمي. نُقدم المحتوى التقني بأسلوب مبسط وموثوق.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">الأقسام</div>
+        <ul class="footer-links" id="footer-col-sections">
+          <li><a href="#" onclick="navFilter('الذكاء الاصطناعي',null);window.scrollTo({top:0,behavior:'smooth'});return false">الذكاء الاصطناعي</a></li>
+          <li><a href="#" onclick="navFilter('الهواتف والأجهزة',null);window.scrollTo({top:0,behavior:'smooth'});return false">الهواتف والأجهزة</a></li>
+          <li><a href="#" onclick="navFilter('الفضاء والعلوم',null);window.scrollTo({top:0,behavior:'smooth'});return false">الفضاء والعلوم</a></li>
+          <li><a href="#" onclick="navFilter('الأمن الرقمي',null);window.scrollTo({top:0,behavior:'smooth'});return false">الأمن الرقمي</a></li>
+          <li><a href="#" onclick="navFilter('ألعاب الفيديو',null);window.scrollTo({top:0,behavior:'smooth'});return false">ألعاب الفيديو</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title" id="footer-company-title">الشركة</div>
+        <ul class="footer-links" id="footer-col-company">
+          <li><a href="#" id="flink-about"   onclick="openFooterNewWin('flink-about');return false">من نحن</a></li>
+          <li><a href="#" id="flink-team"    onclick="openFooterNewWin('flink-team');return false">فريق التحرير</a></li>
+          <li><a href="#" id="flink-ads"     onclick="openFooterNewWin('flink-ads');return false">اعلن معنا</a></li>
+          <li><a href="#" id="flink-privacy" onclick="openFooterNewWin('flink-privacy');return false">سياسة الخصوصية</a></li>
+          <li><a href="#" id="flink-contact" onclick="openFooterNewWin('flink-contact');return false">تواصل معنا</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title" id="footer-more-title">المزيد</div>
+        <ul class="footer-links" id="footer-col-more">
+          <li><a href="#" id="flink-newsletter" onclick="openFooterNewWin('flink-newsletter');return false">📧 النشرة البريدية</a></li>
+          <li><a href="/rss.xml" id="flink-rss" target="_blank" rel="noopener">📡 خلاصة RSS</a></li>
+          <li><a href="/sitemap.xml" id="flink-sitemap" target="_blank" rel="noopener">🗺️ خريطة الموقع</a></li>
+          <li><a href="#" id="flink-terms" onclick="openFooterNewWin('flink-terms');return false">📋 شروط الاستخدام</a></li>
+          <li><a href="#" id="flink-cookie" onclick="openFooterNewWin('flink-cookie');return false">🍪 سياسة الكوكيز</a></li>
+          <li><a href="#" id="flink-accessibility" onclick="openFooterNewWin('flink-accessibility');return false">♿ إمكانية الوصول</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy" id="footer-copy">© ٢٠٢٥ الأحداث التقنية · جميع الحقوق محفوظة</span>
+      <div class="footer-socials" id="footer-socials-dynamic">
+        <a class="social-btn" id="footer-social-twitter"   href="#" title="تويتر/X">𝕏</a>
+        <a class="social-btn" id="footer-social-linkedin"  href="#" title="لينكدإن">in</a>
+        <a class="social-btn" id="footer-social-youtube"   href="#" title="يوتيوب">▶</a>
+        <a class="social-btn" id="footer-social-instagram" href="#" title="إنستغرام">📷</a>
+        <a class="social-btn" id="footer-social-facebook"  href="#" title="فيسبوك">f</a>
+        <a class="social-btn" id="footer-social-tiktok"    href="#" title="تيك توك">♪</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script type="module">
+
+import { FIREBASE_CONFIG, DB, VERSION } from './config.js';
+import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, collection, doc, onSnapshot, addDoc, serverTimestamp }
+         from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const _fbApp = initializeApp(FIREBASE_CONFIG);
+const _db    = getFirestore(_fbApp);
+
+// ── in-memory Firebase cache (replaces localStorage reads for shared data) ──
+let _fb = {
+  news:     null,
+  latest:   null,
+  breaking: null,
+  site:     null,
+  cats:     null,
+};
+
+
+// ═══════════════════════════════════════════════════════════════
+// GLOBAL ARTICLE STORE — safe click handling without JSON in HTML
+// ═══════════════════════════════════════════════════════════════
+window._store = {};
+
+function _reg(n) { window._store[n.id] = n; return n; }
+
+function openById(id) {
+  const n = window._store[id];
+  if (n) openArticle(n);
+  else {
+    const all = getNewsData();
+    const found = all.find(x => String(x.id) === String(id));
+    if (found) openArticle(found);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATIC DEFAULT NEWS
+// ═══════════════════════════════════════════════════════════════
+const STATIC_NEWS = [
+  {id:1,  title:'GPT-5 يُحقق أداءً يفوق البشر في 87% من الاختبارات', cat:'الذكاء الاصطناعي', author:'أحمد الرشيدي',    date:'٢٠٢٥/٠٤/٠٥', views:'٢٤,٥٠٠', status:'منشور', priority:'عاجل',  excerpt:'أعلنت شركة OpenAI عن إطلاق نموذجها الجديد GPT-5 الذي يمثل قفزة نوعية في معالجة اللغة الطبيعية.'},
+  {id:2,  title:'كيف ستُعيد الروبوتات رسم ملامح سوق العمل العالمي',  cat:'الذكاء الاصطناعي', author:'د. سارة المنصوري', date:'٢٠٢٥/٠٤/٠٤', views:'١٨,٢٠٠', status:'منشور', priority:'مميز',  excerpt:'تقرير شامل حول تأثير الأتمتة والذكاء الاصطناعي على مئات الملايين من الوظائف.'},
+  {id:3,  title:'ناسا تعلن اكتشاف مواد عضوية على سطح المريخ',        cat:'الفضاء والعلوم',   author:'خالد العتيبي',    date:'٢٠٢٥/٠٤/٠٤', views:'١٢,٧٠٠', status:'منشور', priority:'عادي',  excerpt:'اكتشاف يعيد رسم خارطة البحث عن الحياة في الفضاء الخارجي.'},
+  {id:4,  title:'بطارية CATL توفر شحناً كاملاً في ٥ دقائق',          cat:'السيارات الكهربائية',author:'منى الزهراني',   date:'٢٠٢٥/٠٤/٠٣', views:'٩,٤٠٠',  status:'منشور', priority:'عادي',  excerpt:'تقنية ثورية تنهي أزمة شحن السيارات الكهربائية نهائياً.'},
+  {id:5,  title:'هجوم إلكتروني ضخم يستهدف المصارف الأوروبية',        cat:'الأمن الرقمي',     author:'عمر الحسيني',    date:'٢٠٢٥/٠٤/٠٢', views:'٧,٨٠٠',  status:'منشور', priority:'عاجل',  excerpt:'موجة هجمات تستخدم أدوات ذكاء اصطناعي لتجاوز أنظمة الحماية.'},
+  {id:6,  title:'آبل تختبر iPhone بشاشة قابلة للطي',                  cat:'الهواتف والأجهزة', author:'فيصل الدوسري',   date:'٢٠٢٥/٠٤/٠١', views:'٦,٢٠٠',  status:'منشور', priority:'عادي',  excerpt:'صور مسربة تكشف عن نموذج أولي من آيفون قابل للطي.'},
+  {id:7,  title:'PlayStation 6 رسمياً بقدرات 8K',                     cat:'ألعاب الفيديو',    author:'نورة السبيعي',   date:'٢٠٢٥/٠٣/٣١', views:'٥,١٠٠',  status:'منشور', priority:'عادي',  excerpt:'سوني تعلن تفاصيل الجيل القادم من أقوى أجهزة الألعاب.'},
+  {id:8,  title:'ذكاء اصطناعي يكتشف علاجاً لنوع نادر من السرطان',    cat:'التقنية الحيوية',  author:'رنا أبو عيشة',   date:'٢٠٢٥/٠٣/٣٠', views:'٤,٨٠٠',  status:'منشور', priority:'عادي',  excerpt:'DeepMind يقصّر عملية البحث الدوائي من سنوات إلى أيام.'},
+  {id:9,  title:'SpaceX تطلق Starship في رحلة المدار الأرضي',         cat:'الفضاء والعلوم',   author:'خالد العتيبي',   date:'٢٠٢٥/٠٣/٢٩', views:'٣,٩٠٠',  status:'منشور', priority:'مميز',  excerpt:'الرحلة الخامسة للصاروخ العملاق نحو المدار.'},
+  {id:10, title:'سامسونج تكشف Galaxy S25 Ultra بكاميرا 200 ميجابيكسل',cat:'الهواتف والأجهزة',author:'فيصل الدوسري',   date:'٢٠٢٥/٠٣/٢٨', views:'٨,١٠٠',  status:'منشور', priority:'مميز',  excerpt:'الجيل الجديد بمزايا ذكاء اصطناعي متكاملة.'},
+  {id:11, title:'تسلا تختبر روبوت Optimus في مصانعها',                 cat:'الروبوتات',        author:'منى الزهراني',   date:'٢٠٢٥/٠٣/٢٧', views:'٦,٣٠٠',  status:'منشور', priority:'عادي',  excerpt:'الروبوت المصمم للعمل جنباً إلى جنب مع الإنسان في الإنتاج.'},
+  {id:12, title:'آبل تتجاوز تقييم 4 تريليون دولار للمرة الأولى',      cat:'الشركات والأعمال',author:'أحمد الرشيدي',   date:'٢٠٢٥/٠٣/٢٦', views:'١١,٠٠٠', status:'منشور', priority:'مميز',  excerpt:'الشركة تسجل رقماً قياسياً في تاريخ أسواق المال.'},
+];
+
+function getNewsData() {
+  if (_fb.news && _fb.news.length > 0) return _fb.news;
+  return STATIC_NEWS;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CAT META
+// ═══════════════════════════════════════════════════════════════
+const CAT_META = {
+  'الذكاء الاصطناعي':    {bg:'linear-gradient(135deg,#0d1b2a,#1b3a5e)', icon:'🤖', cls:'tag-blue'},
+  'الهواتف والأجهزة':    {bg:'linear-gradient(135deg,#0a1a2a,#0d3a5c)', icon:'📱', cls:'tag-blue'},
+  'الفضاء والعلوم':      {bg:'linear-gradient(135deg,#1a0533,#2d1060)', icon:'🚀', cls:'tag-purple'},
+  'الأمن الرقمي':        {bg:'linear-gradient(135deg,#2a0a0a,#5c1515)', icon:'🛡️', cls:'tag-red'},
+  'الشركات والأعمال':    {bg:'linear-gradient(135deg,#1a1a0a,#3d3a10)', icon:'💼', cls:'tag-gold'},
+  'ألعاب الفيديو':       {bg:'linear-gradient(135deg,#1a1a0a,#3d3d10)', icon:'🎮', cls:'tag-gold'},
+  'السيارات الكهربائية': {bg:'linear-gradient(135deg,#0a2a1a,#0d5c30)', icon:'🔋', cls:'tag-green'},
+  'الروبوتات':           {bg:'linear-gradient(135deg,#0a2a1a,#0d5c30)', icon:'🦾', cls:'tag-green'},
+  'التقنية الحيوية':     {bg:'linear-gradient(135deg,#1a0a2a,#3d1060)', icon:'🧬', cls:'tag-purple'},
+};
+function catMeta(cat) {
+  return CAT_META[cat] || {bg:'linear-gradient(135deg,#1a1a2e,#16213e)', icon:'📰', cls:'tag-gold'};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ARTICLE PAGE
+// ═══════════════════════════════════════════════════════════════
+function calcReadTime(text) {
+  const words = (text||'').replace(/<[^>]+>/g,'').split(/\s+/).length;
+  const mins  = Math.max(1, Math.ceil(words / 200));
+  return mins + ' دقائق قراءة';
+}
+
+function openArticle(article) {
+  if (!article) return;
+  // Close all-news page if open
+  const anp = document.getElementById('all-news-page');
+  if (anp && anp.style.display !== 'none') { anp.style.display = 'none'; document.body.style.overflow = ''; }
+  const m = catMeta(article.cat);
+  document.getElementById('article-cat').textContent           = article.cat || '';
+  document.getElementById('article-title').textContent         = article.title || '';
+  document.getElementById('article-topbar-title').textContent  = article.title || '';
+  const readTime = calcReadTime((article.content||'') + (article.excerpt||''));
+  const views    = article.views || '٠';
+  document.getElementById('article-meta').innerHTML =
+    `<span>✍️ ${article.author||''}</span>
+     <span>🕐 ${article.date||''}</span>
+     <span class="views-pill">👁 ${views}</span>
+     <span class="read-time">⏱ ${readTime}</span>`;
+  const img = document.getElementById('article-hero-img');
+  if (article.thumbnail) {
+    img.style.background = 'none';
+    img.innerHTML = `<img src="${article.thumbnail}" alt="${article.title}" style="width:100%;height:100%;object-fit:cover">`;
+  } else {
+    img.style.background = m.bg;
+    img.innerHTML = `<span style="font-size:80px">${m.icon}</span>`;
+  }
+  document.getElementById('article-body').innerHTML = buildArticleBody(article);
+  // Show/hide comments section
+  const commSec = document.getElementById('article-comments-section');
+  if (commSec) {
+    const globalOn = _commentsEnabled;
+    const articleOn = article.commentsEnabled !== false;
+    commSec.style.display = (globalOn && articleOn) ? 'block' : 'none';
+    // Clear previous comments list
+    const cList = document.getElementById('comments-list');
+    if (cList) cList.innerHTML = '';
+  }
+  window._scrollPos = window.scrollY;
+  window._currentArticle = article;
+  // Give each article its own URL so users can copy + share it
+  const _artHash = '#article-' + (article.id || Date.now());
+  history.pushState({art:true, id:article.id}, '', location.pathname + _artHash);
+  const page = document.getElementById('article-page');
+  page.style.display = 'block';
+  page.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  // Show reading progress bar
+  const prog = document.getElementById('reading-progress');
+  if (prog) prog.style.display = 'block';
+  page.addEventListener('scroll', _updateProgress, {passive:true});
+  // Article ad banner — read directly from Firebase cache for reliability
+  _applyAdBanner('article', (_fb.site && _fb.site.ad_article) || window._adArticleData);
+  // Update bookmark button state
+  _updateBookmarkBtn(article);
+  // Render suggested news
+  renderSuggestedNews(article);
+}
+
+function buildArticleBody(a) {
+  if (a.content && a.content.trim() && a.content.trim() !== '<br>') return a.content;
+  return `<p>${a.excerpt||a.title||''}</p>
+    <p>تُعدّ هذه التطورات من أبرز ما شهده قطاع التكنولوجيا خلال الفترة الأخيرة، إذ تفتح آفاقاً جديدة أمام الباحثين والمطورين.</p>
+    <h2>التفاصيل الكاملة</h2>
+    <p>تشير التقارير إلى أن هذا الإنجاز جاء بعد شهور من العمل المتواصل مع استثمارات ضخمة في البنية التحتية.</p>
+    <blockquote>"هذا التطور يمثل نقلة نوعية حقيقية في مسيرة الابتكار التقني."</blockquote>
+    <p>ويرى المحللون أن التداعيات ستكون واسعة النطاق على مستوى الصناعة العالمية.</p>`;
+}
+
+function closeArticle() {
+  const page = document.getElementById('article-page');
+  if (page.style.display !== 'block') return;
+  page.style.display = 'none';
+  document.body.style.overflow = '';
+  const prog = document.getElementById('reading-progress');
+  if (prog) { prog.style.display='none'; prog.style.transform='scaleX(0)'; }
+  page.removeEventListener('scroll', _updateProgress);
+  history.replaceState(null, '', location.pathname);
+  window.scrollTo({top: window._scrollPos||0, behavior:'smooth'});
+}
+
+window.addEventListener('popstate', () => {
+  const page = document.getElementById('article-page');
+  if (page.style.display === 'block') {
+    page.style.display = 'none';
+    document.body.style.overflow = '';
+    window.scrollTo({top: window._scrollPos||0, behavior:'smooth'});
+  }
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeArticle(); const anp = document.getElementById('all-news-page'); if(anp && anp.style.display!=='none') closeAllNewsPage(); } });
+
+function shareArticle(platform) {
+  const art = window._currentArticle || {};
+  const title = encodeURIComponent(art.title || document.title);
+  const url   = encodeURIComponent(location.href); // includes #article-{id} for direct sharing
+  const urls  = {
+    twitter:  `https://twitter.com/intent/tweet?text=${title}&url=${url}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
+    whatsapp: `https://wa.me/?text=${title}%20${url}`,
+  };
+  if (platform === 'copy') {
+    navigator.clipboard?.writeText(location.href).then(() => {
+      const btn = document.getElementById('copy-link-btn');
+      if(btn){ btn.textContent='✅ تم النسخ'; setTimeout(()=>btn.textContent='🔗 نسخ الرابط',2000); }
+    });
+    return;
+  }
+  if (urls[platform]) window.open(urls[platform],'_blank','noopener');
+}
+
+function _updateProgress() {
+  const page = document.getElementById('article-page');
+  const prog = document.getElementById('reading-progress');
+  if (!page || !prog) return;
+  const max  = page.scrollHeight - page.clientHeight;
+  const pct  = max > 0 ? page.scrollTop / max : 0;
+  prog.style.transform = `scaleX(${pct})`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCROLL TO TOP (works in main page AND article overlay)
+// ═══════════════════════════════════════════════════════════════
+const _scrollBtn = document.getElementById('scroll-top');
+
+window.addEventListener('scroll', () => {
+  if (document.getElementById('article-page').style.display === 'block') return;
+  _scrollBtn.classList.toggle('visible', window.scrollY > 300);
+});
+
+document.getElementById('article-page').addEventListener('scroll', function() {
+  _scrollBtn.classList.toggle('visible', this.scrollTop > 300);
+});
+
+function scrollToTop() {
+  const art = document.getElementById('article-page');
+  if (art.style.display === 'block') art.scrollTo({top:0, behavior:'smooth'});
+  else window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BREAKING BAR
+// ═══════════════════════════════════════════════════════════════
+let _breakTimer = null;
+
+function checkBreaking() {
+  const _bs   = _fb.site || {};
+  const isOn  = _bs.breaking_active === true || _bs.breaking_active === '1';
+  const start = parseInt(_bs.breaking_start || '0');
+  const dur   = parseInt(_bs.breaking_duration || '300');
+  const bar   = document.getElementById('breaking-bar');
+
+  if (!isOn || !start) { bar.classList.remove('visible'); clearTimeout(_breakTimer); return; }
+
+  const elapsed = Math.floor((Date.now() - start) / 1000);
+  if (elapsed >= dur) {
+    bar.classList.remove('visible');
+    // breaking expired — handled by admin panel
+    return;
+  }
+
+  let data = _fb.breaking || [];
+  const active = data.filter(b => b.active === true);
+  if (!active.length) { bar.classList.remove('visible'); return; }
+
+  // Each active breaking news gets its own row
+  const breakingContainer = document.getElementById('breaking-text');
+  breakingContainer.innerHTML = active.map(b => `
+    <div class="breaking-row">
+      <div class="breaking-label" style="flex-shrink:0">
+        <div class="breaking-pulse"></div>
+        عاجل
+      </div>
+      <div style="flex:1;color:white;font-size:14px;font-weight:700;padding:0 16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.text}</div>
+    </div>`).join('');
+  bar.classList.add('visible');
+
+  clearTimeout(_breakTimer);
+  _breakTimer = setTimeout(() => {
+    bar.classList.remove('visible');
+    localStorage.setItem('atq_breaking_active','0');
+  }, (dur - elapsed) * 1000);
+}
+
+function closeBreaking() {
+  document.getElementById('breaking-bar').classList.remove('visible');
+  clearTimeout(_breakTimer);
+  localStorage.setItem('atq_breaking_active','0');
+  localStorage.removeItem('atq_breaking_start');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SITE RENDER
+// ═══════════════════════════════════════════════════════════════
+function renderSite() {
+  const all = getNewsData();
+  all.forEach(n => _reg(n));               // register all in store
+
+  // Latest ticker — RAF-based seamless scroll (Arabic: left → right)
+  let latest = _fb.latest || [];
+  const activeTicker = latest.filter(l => l.status === 'نشط');
+  const tickerInner = document.querySelector('.ticker-inner');
+  if (tickerInner && activeTicker.length > 0) {
+    // Only rebuild + restart if content actually changed (prevents speed reset on every Firebase update)
+    const newContent = activeTicker.map(l => l.text).join('|');
+    if (newContent !== _tickerLastContent) {
+      _tickerLastContent = newContent;
+      tickerInner.innerHTML = [...activeTicker, ...activeTicker].map(l => `<span>${l.text}</span>`).join('');
+      _tickerPos = 0; // reset position only when content changes
+      _startTickerRAF();
+    }
+  }
+
+  checkBreaking();
+
+  const pub = all.filter(n => n.status === 'منشور');
+  if (!pub.length) {
+    // No published news — ensure static cards still have onclick as fallback
+    document.querySelectorAll('.news-card:not([data-bound]), .sidebar-card:not([data-bound])').forEach(card => {
+      card.style.cursor = 'pointer';
+      card.setAttribute('data-bound','1');
+      const idx = parseInt(card.dataset.idx || '0');
+      const staticPub = all.length ? all : STATIC_NEWS;
+      card.addEventListener('click', () => { if(staticPub[idx]) openArticle(staticPub[idx]); });
+    });
+    return;
+  }
+
+  // ── PRIORITY LOGIC ──────────────────────────────────────────────
+  // 1. عاجل   → always takes the hero spot (first عاجل found, newest first)
+  // 2. مميز   → fills hero if no عاجل (latest مميز first), then fills sidebar
+  // 3. عادي   → fills remaining sidebar slots after مميز
+  const urgentNews  = pub.filter(n => n.priority === 'عاجل');
+  const featNews    = pub.filter(n => n.priority === 'مميز');
+  const normalNews  = pub.filter(n => n.priority !== 'عاجل' && n.priority !== 'مميز');
+
+  // Hero: عاجل first; if none → latest مميز; if none → latest normal
+  const hero = urgentNews[0] || featNews[0] || pub[0];
+  const heroEl = document.querySelector('.hero-main');
+  if (heroEl) {
+    const m = catMeta(hero.cat);
+    heroEl.onclick = () => openArticle(hero);
+    const heroImg = heroEl.querySelector('.hero-img');
+    if (hero.thumbnail) {
+      heroImg.classList.add('has-thumb');
+      heroImg.innerHTML = `<img src="${hero.thumbnail}" alt="${hero.title}">`;
+    } else {
+      heroImg.classList.remove('has-thumb');
+      heroImg.style.background = m.bg;
+    }
+    const badge = heroEl.querySelector('.hero-badge');
+    if (hero.priority === 'عاجل') { badge.textContent='عاجل'; badge.style.display='block'; }
+    else badge.style.display = 'none';
+    heroEl.querySelector('.hero-category').textContent = hero.cat;
+    heroEl.querySelector('.hero-title').textContent    = hero.title;
+    heroEl.querySelector('.hero-excerpt').textContent  = hero.excerpt || '';
+    const spans = heroEl.querySelectorAll('.hero-meta span');
+    if (spans[0]) spans[0].textContent = '✍️ ' + hero.author;
+    if (spans[1]) spans[1].textContent = '🕐 ' + hero.date;
+  }
+
+  // Sidebar — 5 slots: مميز first (latest first), then normal news to fill
+  const sideItemsFeat   = featNews.filter(n => n !== hero);
+  const sideItemsNormal = normalNews.filter(n => n !== hero);
+  const sideItems = [...sideItemsFeat, ...sideItemsNormal].slice(0, 5);
+  const sidebar   = document.querySelector('.sidebar-stack');
+  if (sidebar && sideItems.length) {
+    const nums = ['١','٢','٣','٤','٥'];
+    sidebar.innerHTML = sideItems.map((n,i) => {
+      _reg(n);
+      const m = catMeta(n.cat);
+      const thumbHtml = n.thumbnail
+        ? `<div class="sidebar-thumb"><img src="${n.thumbnail}" alt="${n.title}" onerror="this.parentElement.style.background='${m.bg}';this.parentElement.innerHTML='<span style=font-size:22px>${m.icon}</span>'"></div>`
+        : `<div class="sidebar-thumb" style="background:${m.bg}">${m.icon}</div>`;
+      return `<div class="sidebar-card" onclick="openById(${n.id})" style="cursor:pointer">
+        <div class="sidebar-num">${nums[i]}</div>
+        ${thumbHtml}
+        <div class="sidebar-card-content">
+          <div class="sidebar-cat">${n.cat}</div>
+          <div class="sidebar-title">${n.title}</div>
+          <div class="sidebar-time">${n.date}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Wide featured card: pinned > first مميز not used as hero > none
+  const pinnedId  = _fb.site ? _fb.site.wide_pinned : null;
+  const pinnedArt = pinnedId ? pub.find(n => String(n.id) === String(pinnedId)) : null;
+  const feat      = pinnedArt || sideItemsFeat[0] || null;
+  const wideCard  = document.querySelector('.wide-card');
+  // Hide wide card if no featured article
+  if (wideCard) wideCard.style.display = feat ? '' : 'none';
+  if (wideCard && feat) {
+    const m = catMeta(feat.cat);
+    _reg(feat);
+    wideCard.onclick = () => openArticle(feat);
+    const wi = wideCard.querySelector('.wide-img');
+    if (wi) { wi.style.background = m.bg; wi.textContent = m.icon; }
+    const wb = wideCard.querySelector('.wide-body');
+    if (wb) {
+      const tags = wb.querySelector('.card-tags');
+      if (tags) tags.innerHTML = `<span class="tag ${m.cls}">${feat.cat}</span>`;
+      const wt = wb.querySelector('.wide-title');
+      if (wt) wt.textContent = feat.title;
+      const we = wb.querySelector('.wide-excerpt');
+      if (we) we.textContent = feat.excerpt || feat.title;
+      const ms = wb.querySelectorAll('.hero-meta span');
+      if (ms[0]) ms[0].textContent = '✍️ ' + feat.author;
+      if (ms[1]) ms[1].textContent = '🕐 ' + feat.date;
+    }
+  }
+
+  // Reset show-more state when data changes
+  _updateShowMoreBtn();
+  // Trending section
+  renderTrending();
+
+  // Grid
+  // Grid: all remaining published news (not hero, not feat, not in sidebar), latest first
+  const sideSet = new Set(sideItems.map(n => n.id));
+  const gridItems = pub.filter(n => n!==hero && n!==feat && !sideSet.has(n.id)).slice(0, 6);
+  const grid = document.querySelector('.grid-section .news-grid');
+  if (grid && gridItems.length) {
+    grid.innerHTML = gridItems.map(n => {
+      _reg(n);
+      const m = catMeta(n.cat);
+      const thumb = n.thumbnail
+        ? `<img src="${n.thumbnail}" style="width:100%;height:100%;object-fit:cover" alt="">`
+        : m.icon;
+      const viewsNum = parseInt((n.views||'0').replace(/[^0-9]/g,''))||0;
+      const isTrending = viewsNum > 5000;
+      return `<div class="news-card" onclick="openById(${n.id})">
+        <div class="card-img"><div class="card-img-inner" style="background:${m.bg}">${thumb}</div></div>
+        <div class="card-body">
+          <div class="card-tags">
+            <span class="tag ${m.cls}">${n.cat}</span>
+            ${n.priority==='عاجل'?'<span class="tag tag-red">عاجل</span>':n.priority==='مميز'?'<span class="tag tag-gold">مميز</span>':''}
+            ${isTrending?'<span class="trending-badge">🔥 رائج</span>':''}
+          </div>
+          <div class="card-title">${n.title}</div>
+          <p class="card-excerpt">${n.excerpt||''}</p>
+          <div class="card-footer">
+            <div class="card-author">
+              <div class="author-avatar" style="background:rgba(201,168,76,0.15);color:var(--gold)">${n.author?n.author[0]:'م'}</div>
+              <span class="card-author-name">${n.author||''}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="card-time">${n.date||''}</span>
+              ${n.views?`<span style="font-size:11px;color:var(--text-dim)">· 👁 ${n.views}</span>`:''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAV + CATEGORY FILTER
+// ═══════════════════════════════════════════════════════════════
+function navFilter(cat, el) {
+  document.querySelectorAll('#nav-links a').forEach(a => a.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const pill = Array.from(document.querySelectorAll('.cat-pill'))
+    .find(p => p.textContent.trim().includes(cat === 'الكل' ? 'الكل' : cat));
+  filterByCat(cat, pill || null);
+  window.scrollTo({top:0, behavior:'smooth'});
+  return false;  // prevent default href
+}
+
+function filterByCat(cat, el) {
+  document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  const filterSec = document.getElementById('cat-filter-section');
+  const mainGrid  = document.querySelector('.grid-section');
+  const heroEl    = document.getElementById('site-hero');
+  const statsEl   = document.getElementById('stats-bar');
+
+  if (cat === 'الكل') {
+    filterSec.style.display = 'none';
+    if (mainGrid) mainGrid.style.display = 'block';
+    if (heroEl)   heroEl.style.display   = '';
+    if (statsEl)  statsEl.style.display  = '';
+    return;
+  }
+
+  if (mainGrid) mainGrid.style.display = 'none';
+  if (heroEl)   heroEl.style.display   = 'none';
+  if (statsEl)  statsEl.style.display  = 'none';
+  filterSec.style.display = 'block';
+  document.getElementById('cat-filter-title').textContent = cat === 'اليوم' ? '📅 أخبار اليوم' : 'أخبار ' + cat;
+  // Scroll to top so results are immediately visible
+  window.scrollTo({top: 0, behavior: 'smooth'});
+
+  const all      = getNewsData();
+  const filtered = all.filter(n => n.status === 'منشور' && (cat === 'اليوم' ? true : n.cat === cat));
+  const grid     = document.getElementById('cat-filter-grid');
+  const empty    = document.getElementById('cat-empty');
+
+  if (!filtered.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = filtered.map(n => {
+    _reg(n);
+    const m = catMeta(n.cat);
+    const thumb = n.thumbnail
+      ? `<img src="${n.thumbnail}" style="width:100%;height:100%;object-fit:cover" alt="">`
+      : m.icon;
+    return `<div class="news-card" onclick="openById(${n.id})">
+      <div class="card-img"><div class="card-img-inner" style="background:${m.bg}">${thumb}</div></div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag ${m.cls}">${n.cat}</span></div>
+        <div class="card-title">${n.title}</div>
+        <p class="card-excerpt">${n.excerpt||''}</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(201,168,76,0.15);color:var(--gold)">${n.author?n.author[0]:'م'}</div>
+            <span class="card-author-name">${n.author||''}</span>
+          </div>
+          <span class="card-time">${n.date||''}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function clearCatFilter() {
+  const heroEl  = document.getElementById('site-hero');
+  const statsEl = document.getElementById('stats-bar');
+  if (heroEl)  heroEl.style.display  = '';
+  if (statsEl) statsEl.style.display = '';
+  // Also clear search input
+  const searchInput = document.querySelector('.search-box input');
+  if (searchInput) searchInput.value = '';
+  filterByCat('الكل', document.querySelector('.cat-pill'));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LIVE SEARCH
+// ═══════════════════════════════════════════════════════════════
+function liveSearch(q) {
+  const heroEl   = document.getElementById('site-hero');
+  const statsEl  = document.getElementById('stats-bar');
+  const filterSec= document.getElementById('cat-filter-section');
+  const mainGrid = document.querySelector('.grid-section');
+
+  if (!q.trim()) {
+    filterSec.style.display = 'none';
+    if (mainGrid) mainGrid.style.display = 'block';
+    if (heroEl)   heroEl.style.display   = '';
+    if (statsEl)  statsEl.style.display  = '';
+    // Reset cat pill to "الكل"
+    document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+    const allPill = Array.from(document.querySelectorAll('.cat-pill')).find(p => p.textContent.trim().includes('الكل'));
+    if (allPill) allPill.classList.add('active');
+    return;
+  }
+
+  const all = getNewsData();
+  const q2  = q.trim().toLowerCase();
+  const results = all.filter(n =>
+    n.status === 'منشور' &&
+    (n.title.toLowerCase().includes(q2) || (n.excerpt||'').toLowerCase().includes(q2) ||
+     n.cat.includes(q) || (n.author||'').includes(q))
+  );
+
+  if (mainGrid) mainGrid.style.display = 'none';
+  if (heroEl)   heroEl.style.display   = 'none';
+  if (statsEl)  statsEl.style.display  = 'none';
+  filterSec.style.display = 'block';
+  document.getElementById('cat-filter-title').textContent = '🔍 نتائج البحث: "' + q + '"';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+
+  const grid  = document.getElementById('cat-filter-grid');
+  const empty = document.getElementById('cat-empty');
+
+  if (!results.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  grid.innerHTML = results.map(n => {
+    _reg(n);
+    const m = catMeta(n.cat);
+    const thumb = n.thumbnail
+      ? `<img src="${n.thumbnail}" style="width:100%;height:100%;object-fit:cover" alt="">`
+      : m.icon;
+    return `<div class="news-card" onclick="openById(${n.id})">
+      <div class="card-img"><div class="card-img-inner" style="background:${m.bg}">${thumb}</div></div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag ${m.cls}">${n.cat}</span></div>
+        <div class="card-title">${n.title}</div>
+        <p class="card-excerpt">${n.excerpt||''}</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(201,168,76,0.15);color:var(--gold)">${n.author?n.author[0]:'م'}</div>
+            <span class="card-author-name">${n.author||''}</span>
+          </div>
+          <span class="card-time">${n.date||''}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// THEME / LANGUAGE
+// ═══════════════════════════════════════════════════════════════
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  const isLight = document.body.classList.contains('light');
+  const btn = document.getElementById('theme-btn');
+  if (btn) { btn.textContent = isLight ? '🌙 داكن' : '🌙 فاتح'; btn.classList.toggle('active', isLight); }
+  localStorage.setItem('atq_theme', isLight ? 'light' : 'dark');
+}
+
+function toggleLang() {
+  document.body.classList.toggle('english');
+  const isEn = document.body.classList.contains('english');
+  const btn = document.getElementById('lang-btn');
+  if (btn) { btn.textContent = isEn ? 'ع' : 'EN'; btn.classList.toggle('active', isEn); }
+  localStorage.setItem('atq_lang', isEn ? 'en' : 'ar');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SITE BUTTONS VISIBILITY
+// ═══════════════════════════════════════════════════════════════
+function applySiteButtons(controls) {
+  // Toggle visibility for each controllable element
+  const visMap = {
+    'search-box':     'search-box',
+    'lang-btn':       'lang-btn',
+    'theme-btn':      'theme-btn',
+    'subscribe-btn':  'subscribe-btn',
+    'stats-bar':      'stats-bar',
+    'site-newsletter':'site-newsletter',
+    'site-hero':      'site-hero',
+    'scroll-top':     'scroll-top',
+    'cats-strip':     'cats-strip',
+    'site-ticker':    'site-ticker',
+    'site-footer':    'site-footer',
+    'breaking-bar-wrap': 'breaking-bar',
+  };
+  Object.entries(visMap).forEach(([key, elId]) => {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (controls[key] === false) {
+      el.style.display = 'none';
+    } else if (controls[key] === true || controls[key] === undefined) {
+      // Restore display — use '' so element uses its CSS default
+      if (el.style.display === 'none') el.style.display = '';
+    }
+  });
+
+  // Theme override from controls
+  if (controls['force-theme'] === 'light' && !document.body.classList.contains('light')) {
+    document.body.classList.add('light');
+  } else if (controls['force-theme'] === 'dark' && document.body.classList.contains('light')) {
+    document.body.classList.remove('light');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TICKER SPEED (live update from admin panel)
+// ═══════════════════════════════════════════════════════════════
+// ─── TICKER: RAF-BASED SEAMLESS SCROLL ──────────────────────────
+// Speed = fixed pixels/second regardless of content width
+// This prevents speed changing when content or Firebase updates occur
+let _tickerRaf    = null;
+let _tickerPos    = 0;
+let _tickerPxSec  = 60;  // default: 60 px/second (comfortable reading)
+let _tickerLastContent = ''; // track content to avoid needless restarts
+let _newsOffset        = 6;   // extra news loaded by show-more button
+let _commentsEnabled   = true; // global comments toggle from Firebase
+
+function _startTickerRAF() {
+  if (_tickerRaf) { cancelAnimationFrame(_tickerRaf); _tickerRaf = null; }
+  const inner = document.querySelector('.ticker-inner');
+  if (!inner) return;
+  // Double-rAF ensures layout is fully computed before measuring
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const halfW = inner.scrollWidth / 2;
+    if (halfW <= 0) return;
+    const pxPerFrame = _tickerPxSec / 60; // constant speed regardless of content length
+    function step() {
+      _tickerPos += pxPerFrame;
+      if (_tickerPos >= halfW) _tickerPos -= halfW; // seamless wrap
+      inner.style.transform = 'translateX(' + _tickerPos + 'px)';
+      _tickerRaf = requestAnimationFrame(step);
+    }
+    _tickerRaf = requestAnimationFrame(step);
+  }));
+}
+
+function applyTickerSpeed(secs) {
+  // secs from admin slider (10–200). Map to px/sec: fast(10s)→200px/s, slow(200s)→10px/s
+  const s = parseInt(secs);
+  if (!s || s <= 0) return;
+  _tickerPxSec = Math.round(2000 / s); // secs=60→33px/s, secs=200→10px/s, secs=10→200px/s
+  if (_tickerRaf) { cancelAnimationFrame(_tickerRaf); _tickerRaf = null; }
+  _startTickerRAF();
+}
+
+// ─── FOOTER LINK OPENER ──────────────────────────────────────────
+const _footerLinks = {};
+function openFooterNewWin(id) {
+  const url = _footerLinks[id];
+  if (url && url !== '#' && (url.startsWith('http') || url.startsWith('/'))) {
+    window.open(url, '_blank', 'noopener');
+  } else {
+    // Fallback: show article overlay
+    const el = document.getElementById(id);
+    const label = el ? el.textContent.trim() : id;
+    openArticle({
+      cat: 'الموقع', title: label,
+      author: 'الأحداث التقنية', date: '', views: '٠',
+      excerpt: 'هذا القسم قيد الإنشاء.',
+      content: `<p>محتوى صفحة <strong>${label}</strong> سيُضاف من لوحة التحكم في قسم إعدادات الفوتر.</p>`
+    });
+  }
+}
+// Legacy: keep openFooterLink as alias
+function openFooterLink(id) { openFooterNewWin(id); }
+
+// ─── DYNAMIC SOCIAL MEDIA ────────────────────────────────────────
+function _applySocialMedia(socials) {
+  const container = document.getElementById('footer-socials-dynamic');
+  if (!container) return;
+  if (!socials || !socials.length) return;
+  const html = socials.map(s => {
+    if (!s.name && !s.icon) return '';
+    const href   = s.url && s.url.startsWith('http') ? s.url : '#';
+    const target = s.url && s.url.startsWith('http') ? ' target="_blank" rel="noopener"' : '';
+    const fs     = s.icon && s.icon.length > 2 ? '11px' : '14px';
+    return `<a class="social-btn" href="${href}"${target} title="${s.name||''}" style="font-size:${fs}">${s.icon || '🔗'}</a>`;
+  }).join('');
+  if (html) container.innerHTML = html;
+}
+
+// ─── COMMENTS ────────────────────────────────────────────────────
+function submitComment() {
+  const inp = document.getElementById('comment-input');
+  const list = document.getElementById('comments-list');
+  if (!inp || !list || !inp.value.trim()) return;
+  const div = document.createElement('div');
+  div.style.cssText = 'background:var(--dark-3);border:1px solid var(--border-dim);border-radius:10px;padding:12px 16px';
+  div.innerHTML = `<div style="font-size:12px;color:var(--text-dim);margin-bottom:6px">زائر · الآن</div><div style="font-size:14px;color:var(--text-muted)">${inp.value.trim()}</div>`;
+  list.prepend(div);
+  inp.value = '';
+}
+
+// ─── AD BANNERS ───────────────────────────────────────────────────
+function _applyAdBanner(slot, data) {
+  const wrap  = document.getElementById('ad-' + slot);
+  const inner = document.getElementById('ad-' + slot + '-inner');
+  if (!wrap || !inner) return;
+
+  // Hide if not active
+  if (!data || !data.active) {
+    wrap.style.display = 'none';
+    wrap.classList.remove('active');
+    return;
+  }
+
+  // Show — works whether element has .ad-banner class or just inline display:none
+  wrap.style.display = '';
+  wrap.classList.add('active');
+  // Apply custom dimensions
+  if (data.width)  wrap.style.maxWidth = (data.width  === '100%' || data.width.endsWith('%'))  ? data.width  : data.width  + 'px';
+  if (data.height && data.height !== 'auto') wrap.style.minHeight = data.height.endsWith('px') ? data.height : data.height + 'px';
+
+  // Build content
+  inner.innerHTML = '';
+  if (data.videoUrl) {
+    inner.innerHTML = '<video src="' + data.videoUrl + '" autoplay muted loop playsinline style="width:100%;max-height:250px;object-fit:cover;border-radius:inherit"></video>';
+  } else if (data.imageUrl) {
+    inner.innerHTML = '<img src="' + data.imageUrl + '" alt="" style="width:100%;max-height:250px;object-fit:cover">';
+  } else if (data.html) {
+    inner.innerHTML = data.html;
+  } else if (data.text) {
+    inner.innerHTML = '<div class="ad-banner-text" style="padding:16px;text-align:center;font-size:14px;color:var(--text)">' + data.text + '</div>';
+  }
+
+  // Click-through link
+  if (data.linkUrl) {
+    inner.style.cursor = 'pointer';
+    inner.onclick = () => window.open(data.linkUrl, '_blank', 'noopener');
+  } else {
+    inner.style.cursor = '';
+    inner.onclick = null;
+  }
+}
+
+// ─── DYNAMIC NAV MENU ────────────────────────────────────────────
+function _closeMobileNav() {
+  const links = document.getElementById('nav-links');
+  if (links) links.classList.remove('mobile-open');
+}
+
+function _applyNavMenu(items) {
+  const ul = document.getElementById('nav-links');
+  if (!ul || !items || !items.length) return;
+  ul.innerHTML = items.map((item, i) => {
+    let onclick = '';
+    if (item.type === 'home' || item.cat === 'الكل')
+      onclick = "navFilter('الكل',this)";
+    else if (item.type === 'allnews')
+      onclick = "openAllNewsPage();return false";
+    else if (item.type === 'url')
+      onclick = "window.open('" + (item.cat||'#') + "','_blank','noopener');return false";
+    else
+      onclick = "navFilter('" + (item.cat||item.label) + "',this)";
+    const isHome = item.type === 'home' || i === 0;
+    return '<li><a href="#"' + (isHome?' class="active" id="nav-all"':'') + ' onclick="_closeMobileNav();' + onclick + '">' + item.label + '</a></li>';
+  }).join('');
+}
+
+// ─── DYNAMIC CATS STRIP ──────────────────────────────────────────
+const _catColors = {
+  'الذكاء الاصطناعي':'#4A9EFF','الهواتف والأجهزة':'#3DDC84','الفضاء والعلوم':'#B090FF',
+  'الأمن الرقمي':'#FF5252','الشركات والأعمال':'#FF9A3C','ألعاب الفيديو':'#F0C840',
+  'السيارات الكهربائية':'#FF7070','الروبوتات':'#40C8F0','التقنية الحيوية':'#C875FF'
+};
+function _applyCatsStrip(cats) {
+  const strip = document.getElementById('cats-strip');
+  if (!strip) return;
+  // Keep the first two pills (اليوم + الكل) static, update the rest
+  const staticPills = strip.querySelectorAll('.cat-pill');
+  // Remove existing dynamic pills (keep first 2)
+  const pills = Array.from(staticPills);
+  pills.slice(2).forEach(p => p.remove());
+  // Add new category pills from Firebase
+  cats.forEach(c => {
+    // Skip if already present (first 2 static)
+    const exists = Array.from(strip.querySelectorAll('.cat-pill'))
+      .some(p => p.textContent.includes(c.name));
+    if (exists) return;
+    const color = c.color || _catColors[c.name] || 'var(--gold)';
+    const pill = document.createElement('div');
+    pill.className = 'cat-pill';
+    pill.innerHTML = `<span class="dot" style="background:${color}"></span>${c.name}`;
+    pill.onclick = () => filterByCat(c.name, pill);
+    strip.appendChild(pill);
+  });
+  // Also update news add/edit form category select
+  const catSel = document.getElementById && null; // index.html doesn't have this
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MANUAL REFRESH — call this when localStorage changed in SAME tab
+function refreshFromStorage() {
+  renderSite();
+  checkBreaking();
+}
+// Also expose globally so admin panel can trigger it
+window._siteRefresh = refreshFromStorage;
+
+// ═══════════════════════════════════════════════════════════════
+// STORAGE EVENT — live sync from admin panel (same browser)
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('storage', e => {
+  switch(e.key) {
+    // All shared data (news/latest/breaking/settings) now via Firebase onSnapshot.
+    // Only user-private prefs kept in localStorage:
+    case 'atq_theme':
+    case 'atq_lang':
+      // handled by toggleTheme / toggleLang directly
+      break;
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INIT — apply settings then render
+// ═══════════════════════════════════════════════════════════════
+
+// openArticleFromEl — called from hero-main onclick (overridden by renderSite but kept as fallback)
+function openArticleFromEl(el) {
+  const pub = getNewsData().filter(n => n.status === 'منشور');
+  const article = pub.find(n => n.priority === 'عاجل') || pub[0];
+  if (article) { openArticle(article); return; }
+  // fallback: read from the element's DOM
+  openArticle({
+    cat:     el.querySelector('.hero-category')?.textContent || 'تقنية',
+    title:   el.querySelector('.hero-title')?.textContent    || '',
+    author:  (el.querySelectorAll('.hero-meta span')[0]?.textContent||'').replace('✍️ ',''),
+    date:    '',
+    views:   '٠',
+    excerpt: el.querySelector('.hero-excerpt')?.textContent  || '',
+  });
+}
+
+// openArticleFromWide — called from wide-card onclick (overridden by renderSite but kept as fallback)
+function openArticleFromWide(el) {
+  const pub  = getNewsData().filter(n => n.status === 'منشور');
+  if (!pub.length) return;
+  const pinnedId  = localStorage.getItem('atq_wide_pinned');
+  const hero = pub.find(n => n.priority === 'عاجل') || pub[0];
+  const feat = (pinnedId ? pub.find(n => String(n.id) === pinnedId) : null)
+             || pub.find(n => n.priority === 'مميز' && n !== hero)
+             || null;
+  if (feat) { openArticle(feat); return; }
+  openArticle({
+    cat:     el.querySelector('.card-tags span')?.textContent  || 'تقنية',
+    title:   el.querySelector('.wide-title')?.textContent      || '',
+    author:  '',
+    date:    '',
+    views:   '٠',
+    excerpt: el.querySelector('.wide-excerpt')?.textContent    || '',
+  });
+}
+
+// ── STATIC CARD OPENERS (called from HTML onclick) ─────────────
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// EVENT DELEGATION — catch ALL news-card and sidebar-card clicks
+// This fires even for static HTML cards with no onclick attribute
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('click', function(e) {
+  // Find closest clickable card
+  const card = e.target.closest('.news-card, .sidebar-card, .wide-card, .hero-main');
+  if (!card) return;
+
+  // If card has inline onclick, let it run normally
+  if (card.getAttribute('onclick')) return;
+
+  // No onclick → figure out which article to open from position in DOM
+  e.preventDefault();
+  e.stopPropagation();
+
+  const all = getNewsData();
+  const pub = all.filter(n => n.status === 'منشور');
+  if (!pub.length) return;
+
+  if (card.classList.contains('hero-main')) {
+    openArticleFromEl(card);
+    return;
+  }
+  if (card.classList.contains('wide-card')) {
+    openArticleFromWide(card);
+    return;
+  }
+  if (card.classList.contains('sidebar-card')) {
+    const cards = Array.from(document.querySelectorAll('.sidebar-card'));
+    const idx   = cards.indexOf(card);
+    // sidebar shows pub items excluding hero
+    const hero  = pub.find(n => n.priority === 'عاجل') || pub[pub.length-1] || pub[0];
+    const sideItems = pub.filter(n => n !== hero);
+    if (sideItems[idx]) { openArticle(sideItems[idx]); return; }
+    if (pub[idx])       { openArticle(pub[idx]); return; }
+    openArticle(pub[0]);
+    return;
+  }
+  if (card.classList.contains('news-card')) {
+    const grid = card.closest('.news-grid');
+    if (!grid) return;
+    const cards = Array.from(grid.querySelectorAll('.news-card'));
+    const idx   = cards.indexOf(card);
+    // grid shows pub items excluding hero and feat
+    const hero = pub.find(n => n.priority === 'عاجل') || pub[pub.length-1] || pub[0];
+    const pinnedId = localStorage.getItem('atq_wide_pinned');
+    const feat = (pinnedId ? pub.find(n => String(n.id) === pinnedId) : null)
+               || pub.find(n => n.priority === 'مميز' && n !== hero)
+               || pub[1] || pub[0];
+    const gridItems = pub.filter(n => n !== hero && n !== feat);
+    if (gridItems[idx]) { openArticle(gridItems[idx]); return; }
+    // Fallback: use STATIC_NEWS
+    const staticPub = STATIC_NEWS.filter(n => n.status === 'منشور');
+    if (staticPub[idx]) { openArticle(staticPub[idx]); return; }
+    openArticle(pub[0]);
+  }
+}, true);  // capture phase so we catch everything
+
+(function init() {
+  // ── Detect article hash on load (for shared links / browser refresh) ──
+  if (location.hash && location.hash.startsWith('#article-')) {
+    const _hashId = location.hash.replace('#article-','').split('?')[0];
+    if (_hashId) {
+      window._pendingArticleId = _hashId;
+      // Try to open immediately from static data (before Firebase loads)
+      const staticFound = STATIC_NEWS.find(x => String(x.id) === String(_hashId));
+      if (staticFound) setTimeout(() => openArticle(staticFound), 100);
+    }
+  }
+
+  // Theme
+  if (localStorage.getItem('atq_theme') === 'light') {
+    document.body.classList.add('light');
+    const btn = document.getElementById('theme-btn');
+    if (btn) { btn.textContent = '🌙 داكن'; btn.classList.add('active'); }
+  }
+  // Language
+  if (localStorage.getItem('atq_lang') === 'en') {
+    document.body.classList.add('english');
+    const langBtn = document.getElementById('lang-btn');
+    if (langBtn) { langBtn.textContent = 'ع'; langBtn.classList.add('active'); }
+  }
+  // Site buttons applied via Firebase site-settings listener
+  // Ticker / site title / subscribe text applied by Firebase site-settings listener
+
+  // Render static demo cards immediately, Firebase will replace when ready
+  renderSite();
+  // Start ticker RAF
+  _startTickerRAF();
+  // Start Firebase real-time listeners
+  startFirebaseListeners();
+
+  // Poll breaking bar every 10s
+  setInterval(checkBreaking, 10000);
+  // Live updates handled by Firebase onSnapshot
+})();
+
+
+// ================================================================
+// FIREBASE REAL-TIME LISTENERS
+// Call once on page load. Each listener re-renders when data changes.
+// ================================================================
+function startFirebaseListeners() {
+
+  // ── NEWS ───────────────────────────────────────────────────
+  onSnapshot(collection(_db, DB.NEWS), snap => {
+    const items = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if (!data || !data.title) return;          // skip corrupt docs
+      if (!data.id) data.id = d.id;              // ensure id field
+      items.push(data);
+    });
+    items.sort((a, b) => Number(b.id||0) - Number(a.id||0));
+    _fb.news = items.length ? items : null;
+    renderSite();
+    // Restore pending article after refresh
+    if (window._pendingArticleId) {
+      const artToRestore = items.find(x => String(x.id) === String(window._pendingArticleId));
+      if (artToRestore) {  setTimeout(() => openArticle(artToRestore), 200); }
+    }
+  }, err => { console.warn('[FB] news:', err); renderSite(); });
+
+  // ── LATEST TICKER ──────────────────────────────────────────
+  onSnapshot(doc(_db, DB.SETTINGS, DB.S.LATEST), snap => {
+    _fb.latest = snap.exists() ? (snap.data().items || []) : [];
+    renderSite();
+  }, err => console.warn('[FB] latest:', err));
+
+  // ── CATEGORIES ──────────────────────────────────────────────
+  onSnapshot(doc(_db, DB.SETTINGS, DB.S.CATS), snap => {
+    if (!snap.exists()) return;
+    const items = snap.data().items || [];
+    if (!items.length) return;
+    _fb.cats = items;
+    _applyCatsStrip(items);
+  }, err => console.warn('[FB] cats:', err));
+
+  // ── BREAKING NEWS ──────────────────────────────────────────
+  onSnapshot(doc(_db, DB.SETTINGS, DB.S.BREAKING), snap => {
+    _fb.breaking = snap.exists() ? (snap.data().items || []) : [];
+    checkBreaking();
+  }, err => console.warn('[FB] breaking:', err));
+
+  // ── SITE SETTINGS ──────────────────────────────────────────
+  // Handles: wide_pinned, site_buttons, ticker, title, subscribe,
+  //          breaking_active, breaking_start, breaking_duration
+  onSnapshot(doc(_db, DB.SETTINGS, DB.S.SITE), snap => {
+    if (!snap.exists()) return;
+    const s = snap.data();
+    _fb.site = s;
+
+    // Site appearance
+    if (s.site_buttons)  applySiteButtons(s.site_buttons);
+    if (s.site_title)    document.querySelectorAll('.nav-logo-text').forEach(el => el.textContent = s.site_title);
+    if (s.subscribe_text) { const sb = document.getElementById('subscribe-btn'); if (sb) sb.textContent = s.subscribe_text; }
+
+    // Ticker
+    if (s.ticker_speed) {
+      document.documentElement.style.setProperty('--ticker-speed', s.ticker_speed + 's');
+      applyTickerSpeed(s.ticker_speed); // update RAF speed
+    }
+    const tk = document.querySelector('.ticker');
+    if (tk) tk.style.display = s.ticker_visible === false ? 'none' : '';
+
+    // Footer settings
+    if (s.footer_desc)      { const el=document.getElementById('footer-desc'); if(el) el.textContent=s.footer_desc; }
+    if (s.footer_copy)      { const el=document.getElementById('footer-copy'); if(el) el.textContent=s.footer_copy; }
+    // Footer legacy social links
+    const socMap = {footer_twitter:'footer-social-twitter',footer_linkedin:'footer-social-linkedin',footer_youtube:'footer-social-youtube',footer_instagram:'footer-social-instagram'};
+    Object.entries(socMap).forEach(([k,id])=>{ if(s[k]){const el=document.getElementById(id);if(el)el.href=s[k]||'#';} });
+    // Dynamic social media
+    if (s.social_media && s.social_media.length) _applySocialMedia(s.social_media);
+    // Footer link URLs
+    ['ai','devices','space','security','gaming','about','team','ads','privacy','contact','newsletter','podcast','popular','archive','reports','terms','cookie','accessibility'].forEach(k => {
+      if(s['flink-' + k]) _footerLinks['flink-' + k] = s['flink-' + k];
+    });
+    // Comments global toggle — store for use when articles open
+    _commentsEnabled = s.comments_enabled !== false;
+    // Stats bar
+    if (s.stats_bar && s.stats_bar.length) {
+      s.stats_bar.forEach((stat, i) => {
+        const vi = document.getElementById('stat-val-'+(i+1));
+        const li = document.getElementById('stat-lbl-'+(i+1));
+        if (vi && stat.val) vi.textContent = stat.val;
+        if (li && stat.lbl) li.textContent = stat.lbl;
+      });
+    }
+    // Dynamic nav menu
+    if (s.nav_menu && s.nav_menu.length) _applyNavMenu(s.nav_menu);
+    // Trending toggle
+    window._trendingOff = s.trending_enabled === false;
+    // Footer company links
+    if (s.footer_company && s.footer_company.length) _applyFooterCol('footer-col-company', s.footer_company);
+    // Footer more links
+    if (s.footer_more && s.footer_more.length) _applyFooterCol('footer-col-more', s.footer_more);
+    // Section + newsletter content
+    if (s.section_title)    { const e=document.getElementById('section-title-el');  if(e) e.textContent=s.section_title; }
+    if (s.newsletter_title) { const e=document.getElementById('newsletter-title-el'); if(e) e.textContent=s.newsletter_title; }
+    if (s.newsletter_sub)   { const e=document.getElementById('newsletter-sub-el');   if(e) e.textContent=s.newsletter_sub; }
+    // Ad banners
+    _applyAdBanner('top',     s.ad_top);
+    _applyAdBanner('bottom',  s.ad_bottom);
+    _applyAdBanner('grid',    s.ad_grid);
+    if (s.ad_article) window._adArticleData = s.ad_article;
+    if (s.ad_allnews) window._adAllnewsData = s.ad_allnews;
+
+    // Breaking state changed → re-check
+    checkBreaking();
+
+    // Wide pinned changed → re-render
+    renderSite();
+  }, err => console.warn('[FB] site:', err));
+}
+
+// ─── NEWSLETTER SUBSCRIPTION ─────────────────────────────────────
+async function subscribeNewsletter() {
+  const inp = document.getElementById('nl-email-input');
+  const btn = document.getElementById('nl-submit-btn');
+  if (!inp || !inp.value.trim()) { inp && inp.focus(); return; }
+  const email = inp.value.trim().toLowerCase();
+  // Basic validation
+  if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+    inp.style.borderColor = 'var(--red)';
+    setTimeout(() => inp.style.borderColor = '', 2000);
+    return;
+  }
+  if (btn) { btn.textContent = '⏳ جاري...'; btn.disabled = true; }
+  try {
+    await addDoc(collection(_db, 'subscribers'), {
+      email,
+      subscribedAt: serverTimestamp(),
+      source: 'newsletter'
+    });
+    inp.value = '';
+    if (btn) { btn.textContent = '✅ تم الاشتراك!'; btn.style.background = 'var(--green)'; }
+    setTimeout(() => {
+      if (btn) { btn.textContent = 'اشترك الآن'; btn.style.background = ''; btn.disabled = false; }
+    }, 3000);
+  } catch(e) {
+    console.error('Subscribe error:', e);
+    if (btn) { btn.textContent = '⚠️ حدث خطأ'; btn.disabled = false; }
+    setTimeout(() => { if (btn) btn.textContent = 'اشترك الآن'; }, 2000);
+  }
+}
+
+// ─── SHOW MORE (main page — loads 6 more after main grid) ────────
+function _updateShowMoreBtn() {
+  const pub = getNewsData().filter(n => n.status === 'منشور');
+  const hero = pub.find(n => n.priority==='عاجل') || pub[pub.length-1] || pub[0];
+  const pinnedId = _fb.site ? _fb.site.wide_pinned : null;
+  const feat = (pinnedId ? pub.find(n => String(n.id)===String(pinnedId)) : null)
+             || pub.find(n => n.priority==='مميز' && n!==hero) || null;
+  const pool = pub.filter(n => n!==hero && n!==feat);
+  _newsOffset = 6;
+  const smGrid = document.getElementById('show-more-grid');
+  if (smGrid) smGrid.innerHTML = '';
+  const wrap = document.getElementById('show-more-wrap');
+  const btn  = document.getElementById('show-more-btn');
+  if (wrap) wrap.style.display = pool.length > 6 ? 'block' : 'none';
+  if (btn)  btn.style.display  = 'block';
+}
+
+function showMoreNews() {
+  const pub = getNewsData().filter(n => n.status === 'منشور');
+  const hero = pub.find(n => n.priority==='عاجل') || pub[pub.length-1] || pub[0];
+  const pinnedId = _fb.site ? _fb.site.wide_pinned : null;
+  const feat = (pinnedId ? pub.find(n => String(n.id)===String(pinnedId)) : null)
+             || pub.find(n => n.priority==='مميز' && n!==hero) || null;
+  const pool  = pub.filter(n => n!==hero && n!==feat);
+  const batch = pool.slice(_newsOffset, _newsOffset + 6);
+  _newsOffset += 6;
+  const grid = document.getElementById('show-more-grid');
+  if (!grid || !batch.length) return;
+  grid.innerHTML += batch.map(n => _makeCard(n)).join('');
+  const wrap = document.getElementById('show-more-wrap');
+  const btn  = document.getElementById('show-more-btn');
+  if (wrap) wrap.style.display = 'block';
+  if (pool.length <= _newsOffset && btn) btn.style.display = 'none';
+}
+
+// ─── FOOTER COLUMN RENDERER ──────────────────────────────────────────
+function _applyFooterCol(colId, items) {
+  const ul = document.getElementById(colId);
+  if (!ul || !items) return;
+  ul.innerHTML = items.filter(i => i.active !== false).map(item => {
+    const onclick = item.url && item.url.startsWith('http')
+      ? `window.open('${item.url}','_blank','noopener');return false`
+      : item.url && item.url.startsWith('#filter:')
+        ? `navFilter('${item.url.replace('#filter:','')}',null);window.scrollTo({top:0,behavior:'smooth'});return false`
+        : `openFooterNewWin('footer-custom-${item.id||0}');return false`;
+    if (item.url && item.url.startsWith('http')) {
+      window._footerLinks['footer-custom-'+(item.id||0)] = item.url;
+    }
+    const icon = item.icon ? item.icon + ' ' : '';
+    return `<li><a href="#" onclick="${onclick}">${icon}${item.label||''}</a></li>`;
+  }).join('');
+}
+
+// Close mobile menu when a link is clicked
+document.addEventListener('click', function(e) {
+  const link = e.target.closest('#nav-links a');
+  if (link) {
+    const links = document.getElementById('nav-links');
+    if (links && links.classList.contains('mobile-open')) {
+      links.classList.remove('mobile-open');
+      const bars = document.querySelectorAll('#nav-hamburger div');
+      bars.forEach(b => { b.style.transform = ''; b.style.opacity = '1'; });
+    }
+  }
+});
+
+
+// ─── TRENDING NEWS ───────────────────────────────────────────────
+function renderTrending() {
+  const all = getNewsData().filter(n => n.status === 'منشور' && n.trending === true);
+  const section = document.getElementById('trending-section');
+  const scroll  = document.getElementById('trending-scroll');
+  if (!section || !scroll) return;
+  const trendingOff = window._trendingOff === true; // only off if explicitly set to true
+  if (!all.length || trendingOff) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  scroll.innerHTML = all.map(n => {
+    _reg(n);
+    const m = catMeta(n.cat);
+    const bg = n.thumbnail
+      ? `<img class="trending-card-bg" src="${n.thumbnail}" alt="">`
+      : `<div class="trending-card-bg" style="background:${m.bg};display:flex;align-items:center;justify-content:center;font-size:60px">${m.icon}</div>`;
+    return `<div class="trending-card" onclick="openById(${n.id})">
+      ${bg}
+      <div class="trending-card-overlay">
+        <div class="trending-card-cat">${n.cat}</div>
+        <div class="trending-card-title">${n.title}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function scrollTrending(dir) {
+  const s = document.getElementById('trending-scroll');
+  if (s) s.scrollBy({left: dir * 220, behavior: 'smooth'});
+}
+window.scrollTrending = scrollTrending;
+
+// ─── BOOKMARKS ────────────────────────────────────────────────────────
+function toggleBookmark() {
+  const art = window._currentArticle;
+  if (!art) return;
+  try {
+    let saved = JSON.parse(localStorage.getItem('atq_bookmarks') || '[]');
+    const exists = saved.find(x => String(x.id) === String(art.id));
+    const btn = document.getElementById('bookmark-btn');
+    if (exists) {
+      saved = saved.filter(x => String(x.id) !== String(art.id));
+      if (btn) btn.textContent = '🔖 حفظ';
+      showToast('تم إزالة الخبر من المحفوظات');
+    } else {
+      saved.unshift({id:art.id, title:art.title, cat:art.cat, date:art.date, thumbnail:art.thumbnail||''});
+      if (saved.length > 50) saved = saved.slice(0, 50);
+      if (btn) btn.textContent = '✅ محفوظ';
+      showToast('✅ تم حفظ الخبر — اقرأه لاحقاً');
+    }
+    localStorage.setItem('atq_bookmarks', JSON.stringify(saved));
+  } catch(_) {}
+}
+function _updateBookmarkBtn(article) {
+  const btn = document.getElementById('bookmark-btn');
+  if (!btn) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem('atq_bookmarks') || '[]');
+    btn.textContent = saved.find(x => String(x.id) === String(article.id)) ? '✅ محفوظ' : '🔖 حفظ';
+  } catch(_) { btn.textContent = '🔖 حفظ'; }
+}
+function showToast(msg) {
+  // simple toast if not already defined
+  if (typeof window._showToast === 'function') { window._showToast(msg); return; }
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:28px;right:28px;background:var(--dark-3);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:13px;z-index:9999;direction:rtl;font-family:inherit;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ─── MOBILE NAV ──────────────────────────────────────────────────────
+function toggleMobileNav() {
+  const links = document.getElementById('nav-links');
+  const btn   = document.getElementById('nav-hamburger');
+  if (!links) return;
+  const open = links.classList.toggle('mobile-open');
+  if (btn) btn.style.opacity = open ? '1' : '';
+  // Close on outside click
+  if (open) {
+    setTimeout(() => {
+      document.addEventListener('click', function handler(e) {
+        if (!links.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+          links.classList.remove('mobile-open');
+          document.removeEventListener('click', handler);
+        }
+      });
+    }, 10);
+  }
+}
+
+// ─── ALL NEWS FULL PAGE ────────────────────────────────────────────
+function openAllNewsPage() {
+  const page = document.getElementById('all-news-page');
+  if (!page) return;
+  // Populate category filter
+  const pub  = getNewsData().filter(n => n.status === 'منشور');
+  const cats = [...new Set(pub.map(n => n.cat))].sort();
+  const sel  = document.getElementById('all-news-cat-filter');
+  if (sel) {
+    sel.innerHTML = '<option value="">كل الأقسام</option>' +
+      cats.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+  }
+  renderAllNewsPage();
+  page.style.display = 'block';
+  page.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  document.querySelectorAll('#nav-links a').forEach(a => a.classList.remove('active'));
+  const btn = document.getElementById('nav-allnews');
+  if (btn) btn.classList.add('active');
+}
+
+function closeAllNewsPage() {
+  const page = document.getElementById('all-news-page');
+  if (!page) return;
+  page.style.display = 'none';
+  document.body.style.overflow = '';
+  document.querySelectorAll('#nav-links a').forEach(a => a.classList.remove('active'));
+  const na = document.getElementById('nav-all');
+  if (na) na.classList.add('active');
+}
+
+function renderAllNewsPage() {
+  const pub = getNewsData().filter(n => n.status === 'منشور');
+  const q   = (document.getElementById('all-news-search')?.value || '').toLowerCase().trim();
+  const cat = document.getElementById('all-news-cat-filter')?.value || '';
+  let filtered = [...pub].sort((a,b) => Number(b.id||0) - Number(a.id||0));
+  if (q)   filtered = filtered.filter(n =>
+    n.title.toLowerCase().includes(q) || (n.excerpt||'').toLowerCase().includes(q));
+  if (cat) filtered = filtered.filter(n => n.cat === cat);
+  const cnt   = document.getElementById('all-news-count');
+  const grid  = document.getElementById('all-news-grid');
+  const empty = document.getElementById('all-news-empty');
+  if (cnt) cnt.textContent = '(' + filtered.length + ' خبر)';
+  if (!filtered.length) {
+    if (grid)  grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  if (!grid)  return;
+  grid.innerHTML = filtered.map(n => _makeCard(n)).join('');
+}
+
+// Shared card builder used by show-more, all-news, and suggested
+function _makeCard(n) {
+  _reg(n);
+  const m     = catMeta(n.cat);
+  const thumb = n.thumbnail
+    ? '<img src="' + n.thumbnail + '" style="width:100%;height:100%;object-fit:cover" alt="">'
+    : m.icon;
+  return '<div class="news-card" onclick="openById(' + n.id + ')">' +
+    '<div class="card-img"><div class="card-img-inner" style="background:' + m.bg + '">' + thumb + '</div></div>' +
+    '<div class="card-body">' +
+      '<div class="card-tags"><span class="tag ' + m.cls + '">' + n.cat + '</span>' +
+        (n.priority==='عاجل' ? '<span class="tag tag-red">عاجل</span>' : '') +
+      '</div>' +
+      '<div class="card-title">' + n.title + '</div>' +
+      '<p class="card-excerpt">' + (n.excerpt||'') + '</p>' +
+      '<div class="card-footer">' +
+        '<div class="card-author">' +
+          '<div class="author-avatar" style="background:rgba(201,168,76,0.15);color:var(--gold)">' +
+            (n.author ? n.author[0] : 'م') + '</div>' +
+          '<span class="card-author-name">' + (n.author||'') + '</span>' +
+        '</div>' +
+        '<span class="card-time">' + (n.date||'') + '</span>' +
+      '</div>' +
+    '</div></div>';
+}
+
+
+// ─── SUGGESTED / RELATED NEWS ────────────────────────────────────
+function renderSuggestedNews(article) {
+  const wrap = document.getElementById('article-suggested');
+  const grid = document.getElementById('suggested-grid');
+  if (!wrap || !grid) return;
+  const pub = getNewsData().filter(n => n.status === 'منشور' && String(n.id) !== String(article.id));
+  // Prioritize same category, then latest
+  const sameCat = pub.filter(n => n.cat === article.cat);
+  const others  = pub.filter(n => n.cat !== article.cat);
+  const pool    = [...sameCat, ...others].slice(0, 5);
+  if (!pool.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  grid.innerHTML = pool.map(n => {
+    _reg(n);
+    const m = catMeta(n.cat);
+    const thumb = n.thumbnail
+      ? '<img src="' + n.thumbnail + '" style="width:100%;height:100%;object-fit:cover" alt="">'
+      : m.icon;
+    return '<div class="news-card" onclick="openById(' + n.id + ')">' +
+      '<div class="card-img"><div class="card-img-inner" style="background:' + m.bg + '">' + thumb + '</div></div>' +
+      '<div class="card-body">' +
+        '<div class="card-tags"><span class="tag ' + m.cls + '">' + n.cat + '</span></div>' +
+        '<div class="card-title">' + n.title + '</div>' +
+        '<p class="card-excerpt">' + (n.excerpt||'').substring(0, 90) + '...</p>' +
+        '<div class="card-footer">' +
+          '<span class="card-time">' + (n.date||'') + '</span>' +
+        '</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+// ================================================================
+// EXPOSE FUNCTIONS TO GLOBAL SCOPE (required for type="module")
+// ================================================================
+window.clearCatFilter      = clearCatFilter;
+window.openFooterLink      = openFooterLink;
+window.openAllNewsPage     = openAllNewsPage;
+window.toggleMobileNav     = toggleMobileNav;
+window.toggleBookmark      = toggleBookmark;
+window.showMoreNews        = showMoreNews;
+window.subscribeNewsletter = subscribeNewsletter;
+window.renderSuggestedNews = renderSuggestedNews;
+
+// ── Smooth image loading ────────────────────────────────────────
+document.addEventListener('load', function(e) {
+  if (e.target.tagName === 'IMG') e.target.classList.add('loaded');
+}, true);
+// Mark already-loaded images
+document.querySelectorAll('img').forEach(img => {
+  if (img.complete) img.classList.add('loaded');
+});
+window.closeAllNewsPage    = closeAllNewsPage;
+window.renderAllNewsPage   = renderAllNewsPage;
+window.openFooterNewWin    = openFooterNewWin;
+window.submitComment       = submitComment;
+window.closeArticle        = closeArticle;
+window.closeBreaking       = closeBreaking;
+window.filterByCat         = filterByCat;
+window.liveSearch          = liveSearch;
+window.navFilter           = navFilter;
+window.openArticleFromEl   = openArticleFromEl;
+window.openArticleFromWide = openArticleFromWide;
+window.openById            = openById;
+window.openArticle         = openArticle;
+window.scrollToTop         = scrollToTop;
+window.shareArticle        = shareArticle;
+window.toggleLang          = toggleLang;
+window.toggleTheme         = toggleTheme;
+
+
+</script>
+</body>
+</html>
