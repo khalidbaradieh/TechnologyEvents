@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الأحداث التقنية</title>
+
+<!-- SEO -->
+<meta name="description" id="meta-description" content="منصة إخبارية عربية متخصصة في أحدث أخبار التكنولوجيا والذكاء الاصطناعي والابتكار الرقمي">
+<meta name="keywords" content="تكنولوجيا, أخبار تقنية, ذكاء اصطناعي, هواتف, فضاء, أمن رقمي, روبوتات">
+<meta name="theme-color" content="#C9A84C">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
+<meta property="og:type"        id="og-type"        content="website">
+<meta property="og:site_name"   id="og-site-name"   content="الأحداث التقنية">
+<meta property="og:title"       id="og-title"       content="الأحداث التقنية">
+<meta property="og:description" id="og-description" content="منصة إخبارية عربية متخصصة في أحدث أخبار التكنولوجيا والذكاء الاصطناعي والابتكار الرقمي">
+<meta property="og:image"       id="og-image"       content="">
+<meta property="og:locale"                        content="ar_AR">
+
+<!-- Twitter / X -->
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       id="tw-title"       content="الأحداث التقنية">
+<meta name="twitter:description" id="tw-description" content="منصة إخبارية عربية متخصصة في أحدث أخبار التكنولوجيا">
+<meta name="twitter:image"       id="tw-image"       content="">
+
+<!-- Favicon (inline SVG as default; replaced dynamically if admin sets logoImage) -->
+<link rel="icon" id="site-favicon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23C9A84C'/%3E%3Ctext x='16' y='22' font-family='Tajawal,sans-serif' font-size='18' font-weight='900' text-anchor='middle' fill='%230D0D0F'%3Eت%3C/text%3E%3C/svg%3E">
+
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/index.css">
+</head>
+<body>
+
+<!-- ─── SCROLL TO TOP ─── -->
+<div id="reading-progress"></div>
+<button id="scroll-top" onclick="scrollToTop()" title="العودة للأعلى">↑</button>
+
+<!-- ─── NAVBAR ─── -->
+<nav>
+  <a class="nav-logo" href="#" onclick="clearCatFilter();window.scrollTo({top:0,behavior:'smooth'});return false">
+    <div class="nav-logo-icon">ت</div>
+    <span class="nav-logo-text">الأحداث التقنية</span>
+  </a>
+
+  <ul class="nav-links" id="nav-links">
+    <li><a href="#" class="active" id="nav-all" onclick="_closeMobileNav();navFilter('الكل',this);return false;">الرئيسية</a></li>
+    <li><a href="#" id="nav-allnews" onclick="_closeMobileNav();openAllNewsPage();return false;">📋 كل الأخبار</a></li>
+    <li><a href="#" onclick="_closeMobileNav();navFilter('الذكاء الاصطناعي',this);return false;">الذكاء الاصطناعي</a></li>
+    <li><a href="#" onclick="_closeMobileNav();navFilter('الهواتف والأجهزة',this);return false;">الهواتف والأجهزة</a></li>
+    <li><a href="#" onclick="_closeMobileNav();navFilter('الفضاء والعلوم',this);return false;">الفضاء والعلوم</a></li>
+    <li><a href="#" onclick="_closeMobileNav();navFilter('الأمن الرقمي',this);return false;">الأمن الرقمي</a></li>
+    <li><a href="#" onclick="_closeMobileNav();navFilter('الشركات والأعمال',this);return false;">الشركات والأعمال</a></li>
+    <li class="nav-mobile-contact"><a href="#" onclick="_closeMobileNav();openContactModal();return false;" style="color:var(--gold) !important">✉️ تواصل معنا</a></li>
+  </ul>
+
+  <div class="nav-right">
+    <div class="search-box" id="search-box" onclick="_toggleMobileSearch(event)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24" style="color:#5C5A6B"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="ابحث عن مقال..." oninput="liveSearch(this.value)" onclick="event.stopPropagation()">
+    </div>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="تبديل السمة">🌙 فاتح</button>
+    <button class="theme-btn" id="lang-btn" onclick="toggleLang()" title="Switch to English">EN</button>
+    <button class="btn-subscribe" id="subscribe-btn" onclick="document.getElementById('site-newsletter').scrollIntoView({behavior:'smooth'});setTimeout(()=>{const e=document.getElementById('nl-email-input');if(e)e.focus();},400)">اشترك مجاناً</button>
+    <button class="btn-contact-nav" id="contact-nav-btn" onclick="openContactModal()" title="تواصل معنا">✉️ تواصل معنا</button>
+  </div>
+  <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="القائمة" style="display:none;flex-direction:column;justify-content:center;background:none;border:none;cursor:pointer;padding:8px;gap:4px;flex-shrink:0">
+    <span style="display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.3s"></span>
+    <span style="display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.3s"></span>
+    <span style="display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.3s"></span>
+  </button>
+</nav>
+
+<!-- ─── TICKER: آخر الأخبار ─── -->
+<div class="ticker" id="site-ticker">
+  <div class="ticker-label">📰 آخر الأخبار</div>
+  <div class="ticker-track">
+    <div class="ticker-inner" id="ticker-inner-el">
+      <span>جوجل تطلق نموذج Gemini 2.0 بقدرات متطورة في التفكير متعدد الخطوات</span>
+      <span>آبل تؤكد موعد مؤتمر WWDC 2025 في يونيو المقبل</span>
+      <span>سام ألتمان يكشف عن خطط OpenAI لإطلاق GPT-5 قريباً</span>
+      <span>تسلا تختبر روبوت Optimus في مصانعها الإنتاجية</span>
+      <span>مايكروسوفت تستثمر 80 مليار دولار في البنية التحتية للذكاء الاصطناعي</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── BREAKING BAR (يظهر عند وجود خبر عاجل) ─── -->
+<div id="breaking-bar">
+  <div style="position:relative">
+    <div id="breaking-text"></div>
+    <button class="breaking-close" onclick="closeBreaking()" title="إغلاق" style="position:absolute;top:6px;left:8px">✕</button>
+  </div>
+</div>
+
+<!-- ─── ARTICLE OVERLAY PAGE ─── -->
+<div id="article-page">
+  <div class="article-topbar">
+    <button class="btn-back" onclick="closeArticle()">← العودة للرئيسية</button>
+    <div class="article-topbar-title" id="article-topbar-title"></div>
+  </div>
+  <div class="article-wrap">
+    <div class="article-cat" id="article-cat"></div>
+    <h1 class="article-title" id="article-title"></h1>
+    <div class="article-meta" id="article-meta"></div>
+    <div class="article-hero-img" id="article-hero-img"></div>
+    <div class="article-summary" id="article-summary" style="display:none"></div>
+    <div class="article-body" id="article-body"></div>
+
+    <!-- AD BANNER (article inline) -->
+    <div id="ad-article" style="display:none;margin:24px 0;border-radius:14px;overflow:hidden;border:1px solid var(--border-dim)">
+      <div style="font-size:10px;color:var(--text-dim);text-align:center;padding:5px 0;background:var(--dark-4);letter-spacing:1.5px;font-weight:600">إعلان</div>
+      <div id="ad-article-inner"></div>
+    </div>
+
+    <!-- INTERACTIONS BAR (share, reactions, bookmark — per-button toggles from admin) -->
+    <div class="article-share" id="article-interactions">
+      <span class="article-share-label">التفاعل مع المقال:</span>
+      <button class="share-btn like-btn" data-int="like" id="like-btn" onclick="toggleArticleLike()">👍 <span id="like-count">٠</span></button>
+      <button class="share-btn"    data-int="share"    onclick="shareArticle('native')">🔗 مشاركة</button>
+      <button class="share-btn"    data-int="facebook" onclick="shareArticle('facebook')">📘 Facebook</button>
+      <button class="share-btn"    data-int="twitter"  onclick="shareArticle('twitter')">𝕏 X</button>
+      <button class="share-btn"    data-int="whatsapp" onclick="shareArticle('whatsapp')">💬 WhatsApp</button>
+      <button class="share-btn"    data-int="copy"     onclick="shareArticle('copy')" id="copy-link-btn">📎 نسخ الرابط</button>
+      <button class="share-btn"    data-int="print"    onclick="window.print()">🖨️ طباعة</button>
+      <button class="share-btn"    data-int="bookmark" id="bookmark-btn" onclick="toggleBookmark()" title="حفظ للقراءة لاحقاً">🔖 حفظ</button>
+    </div>
+
+    <!-- COMMENTS SECTION -->
+    <div class="article-comments-section" id="article-comments-section" style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border-dim);display:none">
+      <h3 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px">💬 التعليقات</h3>
+      <div style="background:var(--dark-3);border:1px solid var(--border-dim);border-radius:12px;padding:16px;margin-bottom:16px">
+        <textarea id="comment-input" placeholder="شارك رأيك في الخبر..." style="width:100%;background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:14px;resize:none;min-height:70px;direction:rtl;line-height:1.6"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <button onclick="submitComment()" style="background:var(--gold);color:var(--dark);border:none;padding:8px 20px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">إرسال التعليق</button>
+        </div>
+      </div>
+      <div id="comments-list" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+
+    <!-- RELATED NEWS (trending-style cards) -->
+    <div id="article-suggested" style="margin-top:40px;padding-top:28px;border-top:1px solid var(--border-dim)">
+      <h3 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px"><span style="display:block;width:3px;height:20px;background:var(--gold);border-radius:2px"></span>أخبار ذات صلة</h3>
+      <div class="trending-scroll" id="suggested-scroll" style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none"></div>
+      <div class="scroll-dots" id="suggested-dots" data-target="suggested-scroll"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SEARCH / CATEGORY RESULTS (shown above hero when active) ─── -->
+<div id="cat-filter-section" style="display:none;max-width:1280px;margin:0 auto;padding:24px 2rem 0">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <h2 style="font-size:20px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:10px">
+      <span style="display:block;width:4px;height:22px;background:var(--gold);border-radius:2px"></span>
+      <span id="cat-filter-title">أخبار القسم</span>
+    </h2>
+    <button onclick="clearCatFilter()" style="font-size:13px;color:var(--text-dim);background:none;border:none;cursor:pointer">✕ إغلاق الفلتر</button>
+  </div>
+  <div class="news-grid" id="cat-filter-grid"></div>
+  <div id="cat-empty" style="display:none;text-align:center;padding:40px;color:var(--text-dim);font-size:14px">لا توجد أخبار في هذا القسم حالياً</div>
+</div>
+
+<!-- ─── AD BANNER TOP ─── -->
+<div class="ad-banner" id="ad-top"><div class="ad-banner-inner" id="ad-top-inner"><div class="ad-banner-text" id="ad-top-text"></div></div></div>
+
+<!-- ─── HERO ─── -->
+<div class="hero" id="site-hero">
+  <div class="hero-main" onclick="openArticleFromEl(this)" data-article-id="hero">
+    <!-- Background image layer -->
+    <div class="hero-img">
+      <div class="hero-img-gfx"></div>
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="rgba(201,168,76,0.3)" stroke-width="0.5" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.6">
+        <circle cx="50" cy="50" r="35" stroke-dasharray="4 3"/>
+        <circle cx="50" cy="50" r="20"/>
+        <circle cx="50" cy="50" r="5" fill="rgba(201,168,76,0.3)" stroke="none"/>
+        <line x1="15" y1="50" x2="85" y2="50" opacity="0.5"/>
+        <line x1="50" y1="15" x2="50" y2="85" opacity="0.5"/>
+      </svg>
+    </div>
+    <!-- Top bar with category + urgent badge -->
+    <div class="hero-top-bar">
+      <div class="hero-category">الذكاء الاصطناعي</div>
+      <div class="hero-badge">🔴 عاجل</div>
+    </div>
+    <!-- Overlaid content -->
+    <div class="hero-content">
+      <h1 class="hero-title">ثورة حقيقية في عالم الذكاء الاصطناعي: GPT-5 يُحقق أداءً يفوق البشر في 87% من الاختبارات المعيارية</h1>
+      <p class="hero-excerpt">أعلنت شركة OpenAI الأمريكية عن إطلاق نموذجها الجديد GPT-5، الذي يُمثل قفزة نوعية في مجال معالجة اللغة الطبيعية والاستدلال المنطقي.</p>
+      <div class="hero-meta">
+        <span>✍️ أحمد الرشيدي</span>
+        <span>🕐 منذ ساعتين</span>
+        <span>👁 ٢٤٫٥ ألف</span>
+      </div>
+      <button class="hero-cta" onclick="event.stopPropagation()">افتح التفاصيل ←</button>
+    </div>
+  </div>
+
+  <div class="sidebar-stack">
+    <div class="sidebar-card">
+      <div class="sidebar-num">١</div>
+      <div class="sidebar-thumb" style="background:linear-gradient(135deg,#0a1a2a,#0d3a5c)">📱</div>
+      <div class="sidebar-card-content">
+        <div class="sidebar-cat">الهواتف الذكية</div>
+        <div class="sidebar-title">سامسونج تكشف عن Galaxy S25 Ultra بكاميرا 200 ميجابيكسل وذكاء اصطناعي متكامل</div>
+        <div class="sidebar-time">منذ ٣ ساعات</div>
+      </div>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-num">٢</div>
+      <div class="sidebar-thumb" style="background:linear-gradient(135deg,#2a0a0a,#5c1515)">🛡️</div>
+      <div class="sidebar-card-content">
+        <div class="sidebar-cat">الأمن الرقمي</div>
+        <div class="sidebar-title">ثغرة أمنية خطيرة تطال ملايين الأجهزة العاملة بنظام ويندوز 11</div>
+        <div class="sidebar-time">منذ ٥ ساعات</div>
+      </div>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-num">٣</div>
+      <div class="sidebar-thumb" style="background:linear-gradient(135deg,#1a0533,#2d1060)">🚀</div>
+      <div class="sidebar-card-content">
+        <div class="sidebar-cat">الفضاء والعلوم</div>
+        <div class="sidebar-title">SpaceX تُطلق صاروخ Starship في رحلته الخامسة نحو المدار الأرضي</div>
+        <div class="sidebar-time">منذ ٧ ساعات</div>
+      </div>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-num">٤</div>
+      <div class="sidebar-thumb" style="background:linear-gradient(135deg,#1a1a0a,#3d3a10)">💼</div>
+      <div class="sidebar-card-content">
+        <div class="sidebar-cat">الشركات والأعمال</div>
+        <div class="sidebar-title">آبل تتجاوز تقييم ٤ تريليون دولار للمرة الأولى في تاريخها</div>
+        <div class="sidebar-time">منذ ٩ ساعات</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── AD BANNER BOTTOM ─── -->
+<div class="ad-banner" id="ad-bottom"><div class="ad-banner-inner" id="ad-bottom-inner"><div class="ad-banner-text" id="ad-bottom-text"></div></div></div>
+
+<!-- ─── CATEGORIES ─── -->
+<div class="cats-strip" id="cats-strip">
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('اليوم',this)"><span class="dot" style="background:#FF5252"></span>أخبار اليوم</div>
+  <div class="cat-pill active" id="cat-pill-all" onclick="openAllNewsPage();return false"><span class="dot" style="background:var(--gold)"></span>الكل</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الذكاء الاصطناعي',this)"><span class="dot" style="background:#4A9EFF"></span>الذكاء الاصطناعي</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الهواتف والأجهزة',this)"><span class="dot" style="background:#3DDC84"></span>الهواتف والأجهزة</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الفضاء والعلوم',this)"><span class="dot" style="background:#B090FF"></span>الفضاء والعلوم</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الأمن الرقمي',this)"><span class="dot" style="background:#FF5252"></span>الأمن الرقمي</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الشركات والأعمال',this)"><span class="dot" style="background:#FF9A3C"></span>الشركات والأعمال</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('الروبوتات',this)"><span class="dot" style="background:#40C8F0"></span>الروبوتات</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('ألعاب الفيديو',this)"><span class="dot" style="background:#F0C840"></span>ألعاب الفيديو</div>
+  <div class="cat-pill" onclick="_closeMobileNav();filterByCat('السيارات الكهربائية',this)"><span class="dot" style="background:#FF7070"></span>السيارات الكهربائية</div>
+</div>
+
+
+<!-- ─── TRENDING NEWS ─── -->
+<div id="trending-section" style="display:none;max-width:1280px;margin:0 auto;padding:0 2rem 8px">
+  <div class="trending-header">
+    <div class="trending-title">
+      <span style="display:block;width:4px;height:22px;background:var(--red);border-radius:2px"></span>
+      🔥 الأكثر تداولاً الآن
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="trending-nav-btn" onclick="scrollTrending(-1)" title="السابق">›</button>
+      <button class="trending-nav-btn" onclick="scrollTrending(1)" title="التالي">‹</button>
+    </div>
+  </div>
+  <div class="trending-scroll" id="trending-scroll"></div>
+  <div class="scroll-dots" id="trending-dots" data-target="trending-scroll"></div>
+</div>
+
+<!-- ─── ARTICLES ─── -->
+<div class="grid-section">
+  <div class="section-header">
+    <h2 class="section-title" id="section-title-el">أبرز المقالات</h2>
+    <a href="#" class="section-link" onclick="openAllNewsPage();return false">عرض الكل ←</a>
+  </div>
+
+  <div class="wide-card" style="cursor:pointer" onclick="openArticleFromWide(this)">
+    <div class="wide-ribbon">⭐ ابرز المقالات</div>
+    <div class="wide-img" style="background:linear-gradient(135deg,#0d1b2a,#1b3a5e)"><div class="wide-img-emoji" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:80px;z-index:1">🤖</div></div>
+    <div class="wide-body">
+      <div class="card-tags">
+        <span class="tag tag-blue">الذكاء الاصطناعي</span>
+        <span class="tag tag-gold">تحليل معمق</span>
+      </div>
+      <div class="wide-title">كيف ستُعيد الروبوتات الذكية رسم ملامح سوق العمل العالمي بحلول ٢٠٣٠؟</div>
+      <p class="wide-excerpt">تقرير شامل يستعرض أحدث الدراسات والتوقعات حول تأثير الأتمتة والذكاء الاصطناعي على مئات الملايين من الوظائف حول العالم، مع تحليل للقطاعات الأكثر عرضةً للتحول الجذري.</p>
+      <div class="hero-meta">
+        <span>✍️ د. سارة المنصوري</span>
+        <span>🕐 ١٠ دقائق قراءة</span>
+        <span>👁 ٤٥ ألف مشاهدة</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="news-grid">
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#1a0533,#2d1060)">🚀</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-purple">الفضاء</span></div>
+        <div class="card-title">ناسا تعلن اكتشاف مواد عضوية معقدة على سطح المريخ لأول مرة</div>
+        <p class="card-excerpt">أعلنت وكالة ناسا عن اكتشاف مثير يعيد رسم خارطة البحث عن الحياة في الفضاء الخارجي.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(160,120,255,0.15);color:#B090FF">خ</div>
+            <span class="card-author-name">خالد العتيبي</span>
+          </div>
+          <span class="card-time">منذ ١ يوم</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#0a2a1a,#0d5c30)">🔋</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-green">السيارات الكهربائية</span></div>
+        <div class="card-title">بطارية جديدة من CATL توفر شحناً كاملاً في أقل من ٥ دقائق</div>
+        <p class="card-excerpt">طوّرت الشركة الصينية الرائدة تقنية ثورية قد تُنهي أزمة شحن السيارات الكهربائية نهائياً.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(61,220,132,0.15);color:#3DDC84">م</div>
+            <span class="card-author-name">منى الزهراني</span>
+          </div>
+          <span class="card-time">منذ ٢ يوم</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#2a0a0a,#5c1515)">🛡️</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-red">الأمن الرقمي</span></div>
+        <div class="card-title">هجوم إلكتروني ضخم يستهدف بنية المصارف الأوروبية التحتية</div>
+        <p class="card-excerpt">كشفت تقارير عن موجة هجمات غير مسبوقة تستخدم أدوات ذكاء اصطناعي لتجاوز أنظمة الحماية.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(255,82,82,0.15);color:#FF7070">ع</div>
+            <span class="card-author-name">عمر الحسيني</span>
+          </div>
+          <span class="card-time">منذ ٣ أيام</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#0a1a2a,#0d3a5c)">📱</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-blue">الهواتف الذكية</span></div>
+        <div class="card-title">آبل تختبر iPhone بشاشة قابلة للطي في تسريبات جديدة من المصنع</div>
+        <p class="card-excerpt">صور مسرّبة تكشف عن نموذج أولي من آيفون قابل للطي بتصميم مختلف عن منافسيه.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(74,158,255,0.15);color:#6BB5FF">ف</div>
+            <span class="card-author-name">فيصل الدوسري</span>
+          </div>
+          <span class="card-time">منذ ٤ أيام</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#1a1a0a,#3d3d10)">🎮</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-gold">ألعاب الفيديو</span></div>
+        <div class="card-title">PlayStation 6 رسمياً: سوني تؤكد الإطلاق في نهاية ٢٠٢٦ بقدرات 8K</div>
+        <p class="card-excerpt">سوني تكسر الصمت وتعلن تفاصيل مثيرة عن الجيل القادم من أقوى أجهزة الألعاب.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(201,168,76,0.15);color:var(--gold)">ن</div>
+            <span class="card-author-name">نورة السبيعي</span>
+          </div>
+          <span class="card-time">منذ ٥ أيام</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="card-img">
+        <div class="card-img-inner" style="background:linear-gradient(135deg,#1a0a2a,#3d1060)">🧬</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags"><span class="tag tag-purple">التقنية الحيوية</span></div>
+        <div class="card-title">ذكاء اصطناعي يكتشف علاجاً محتملاً لنوع نادر من السرطان في ٤٨ ساعة</div>
+        <p class="card-excerpt">شركة DeepMind تُحقق اختراقاً علمياً يُقصّر عملية البحث الدوائي من سنوات إلى أيام.</p>
+        <div class="card-footer">
+          <div class="card-author">
+            <div class="author-avatar" style="background:rgba(160,120,255,0.15);color:#B090FF">ر</div>
+            <span class="card-author-name">رنا أبو عيشة</span>
+          </div>
+          <span class="card-time">منذ ٦ أيام</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── AD BANNER GRID (after main news grid) ─── -->
+<div class="ad-banner" id="ad-grid"><div class="ad-banner-inner" id="ad-grid-inner"></div></div>
+
+<!-- ─── SHOW MORE BUTTON (on main page, before newsletter) ─── -->
+<div id="show-more-wrap" style="display:none;max-width:1280px;margin:0 auto;padding:0 2rem 0">
+  <div id="show-more-grid" class="news-grid" style="margin-bottom:24px"></div>
+  <div style="text-align:center;padding:8px 0 36px">
+    <button id="show-more-btn" onclick="showMoreNews()" style="background:var(--dark-3);border:1px solid var(--border);color:var(--text-muted);padding:12px 40px;border-radius:12px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.3px">▾ عرض المزيد من الأخبار</button>
+  </div>
+</div>
+
+<!-- ─── ALL NEWS FULL PAGE (fixed overlay, opens when clicking كل الأخبار) ─── -->
+<div id="all-news-page" style="display:none;position:fixed;inset:0;background:var(--dark);z-index:100;overflow-y:auto;padding-top:64px">
+  <div style="position:sticky;top:0;z-index:10;background:rgba(13,13,15,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 2rem;height:64px;display:flex;align-items:center;gap:16px">
+    <button onclick="closeAllNewsPage()" style="background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;padding:0;line-height:1;flex-shrink:0" title="العودة">←</button>
+    <div style="font-size:16px;font-weight:700;color:var(--text);flex:1">📋 جميع الأخبار <span id="all-news-count" style="font-size:13px;color:var(--text-dim);font-weight:400"></span></div>
+    <div class="all-news-toolbar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select id="all-news-cat-filter" onchange="renderAllNewsPage()" style="background:var(--dark-3);border:1px solid var(--border-dim);border-radius:8px;padding:6px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none;cursor:pointer">
+        <option value="">كل الأقسام</option>
+      </select>
+      <input id="all-news-search" type="text" placeholder="🔍 ابحث..." oninput="renderAllNewsPage()" style="background:var(--dark-3);border:1px solid var(--border-dim);border-radius:8px;padding:6px 14px;color:var(--text);font-family:inherit;font-size:13px;outline:none;width:170px;direction:rtl">
+    </div>
+  </div>
+  <div style="max-width:1280px;margin:0 auto;padding:32px 2rem 60px">
+    <!-- Ad banner: shown when admin enables 'بانر في صفحة كل الأخبار' -->
+    <div class="ad-banner" id="ad-allnews" style="margin:0 auto 24px;padding:0"><div class="ad-banner-inner" id="ad-allnews-inner"></div></div>
+    <div class="news-grid" id="all-news-grid"></div>
+    <div id="all-news-empty" style="display:none;text-align:center;padding:60px;color:var(--text-dim)">لا توجد أخبار</div>
+  </div>
+</div>
+
+<!-- ─── NEWSLETTER ─── -->
+<div class="newsletter" id="site-newsletter">
+  <div class="newsletter-inner">
+    <div>
+      <div class="newsletter-title" id="newsletter-title-el">لا تفوّت أي خبر تقني 🔔</div>
+      <p class="newsletter-sub" id="newsletter-sub-el">اشترك في نشرتنا الأسبوعية واستقبل أهم أخبار التكنولوجيا مباشرةً في بريدك الإلكتروني</p>
+    </div>
+    <div class="newsletter-form">
+      <input type="email" class="newsletter-input" id="nl-email-input" placeholder="بريدك الإلكتروني..." onkeydown="if(event.key==='Enter')subscribeNewsletter()">
+      <button class="btn-subscribe" onclick="subscribeNewsletter()" style="padding:10px 22px;font-size:14px" id="nl-submit-btn">اشترك الآن</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── STATS ─── -->
+<div class="stats-bar" id="stats-bar">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-gold">📰</div>
+    <div><div class="stat-val" id="stat-val-1">١٢٤+</div><div class="stat-lbl" id="stat-lbl-1">مقال اليوم</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-blue">👥</div>
+    <div><div class="stat-val" id="stat-val-2">٢.٣م</div><div class="stat-lbl" id="stat-lbl-2">قارئ نشط</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-green">✍️</div>
+    <div><div class="stat-val" id="stat-val-3">٤٨</div><div class="stat-lbl" id="stat-lbl-3">محرر متخصص</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-purple">🏆</div>
+    <div><div class="stat-val" id="stat-val-4">٦</div><div class="stat-lbl" id="stat-lbl-4">جوائز إعلامية</div></div>
+  </div>
+</div>
+
+<!-- ─── CONTACT US (floating button + modal) ─── -->
+<button id="contact-us-btn" onclick="openContactModal()" title="تواصل معنا" aria-label="تواصل معنا">
+  ✉️ تواصل معنا
+</button>
+<div id="contact-modal" class="contact-modal-overlay" style="display:none" onclick="if(event.target===this)closeContactModal()">
+  <div class="contact-modal">
+    <div class="contact-modal-head">
+      <div class="contact-modal-title">✉️ تواصل معنا</div>
+      <button class="contact-modal-close" onclick="closeContactModal()" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="contact-modal-body">
+      <div id="contact-success" style="display:none;background:rgba(61,220,132,0.12);border:1px solid rgba(61,220,132,0.3);color:var(--green);border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:14px;text-align:center;font-weight:600">
+        ✅ تم إرسال رسالتك بنجاح. سنتواصل معك قريباً.
+      </div>
+      <div id="contact-error" style="display:none;background:rgba(255,82,82,0.12);border:1px solid rgba(255,82,82,0.3);color:var(--red);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;text-align:center"></div>
+      <div class="contact-field">
+        <label>الاسم <span class="req">*</span></label>
+        <input type="text" id="cf-name" placeholder="اسمك الكامل">
+      </div>
+      <div class="contact-field">
+        <label>البريد الإلكتروني <span class="req">*</span></label>
+        <input type="email" id="cf-email" placeholder="you@example.com" dir="ltr">
+      </div>
+      <div class="contact-field">
+        <label>رقم الجوال (اختياري)</label>
+        <input type="tel" id="cf-mobile" placeholder="+965xxxxxxxx" dir="ltr">
+      </div>
+      <div class="contact-field">
+        <label>الموضوع (اختياري)</label>
+        <input type="text" id="cf-subject" placeholder="موضوع الرسالة">
+      </div>
+      <div class="contact-field">
+        <label>رسالتك <span class="req">*</span></label>
+        <textarea id="cf-message" rows="5" placeholder="اكتب رسالتك هنا..."></textarea>
+      </div>
+      <button class="contact-submit-btn" onclick="submitContact()">إرسال الرسالة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MAINTENANCE OVERLAY ─── -->
+<div id="maintenance-overlay" style="display:none;position:fixed;inset:0;z-index:9000;background:var(--dark);padding:40px 20px;overflow-y:auto">
+  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:30px">
+    <img id="maintenance-image" src="" alt="" style="display:none;max-width:min(420px,70vw);max-height:38vh;object-fit:contain;filter:drop-shadow(0 12px 40px rgba(201,168,76,0.25))">
+    <div id="maintenance-text" style="font-size:clamp(28px,6vw,64px);font-weight:900;color:var(--text);line-height:1.4;max-width:900px;padding:0 20px">الموقع تحت الصيانة... نعود قريباً</div>
+    <div style="font-size:clamp(14px,2.2vw,18px);color:var(--text-dim)">We're currently performing maintenance. We'll be back shortly.</div>
+  </div>
+</div>
+
+<!-- ─── FOOTER ─── -->
+<footer id="site-footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a class="nav-logo" href="#" onclick="clearCatFilter();window.scrollTo({top:0,behavior:'smooth'});return false">
+          <div class="nav-logo-icon">ت</div>
+          <span class="nav-logo-text">الأحداث التقنية</span>
+        </a>
+        <p id="footer-desc">منصة إخبارية عربية متخصصة في أحدث أخبار التكنولوجيا والذكاء الاصطناعي والابتكار الرقمي. نُقدم المحتوى التقني بأسلوب مبسط وموثوق.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">الأقسام</div>
+        <ul class="footer-links" id="footer-col-sections">
+          <li><a href="#" onclick="navFilter('الذكاء الاصطناعي',null);window.scrollTo({top:0,behavior:'smooth'});return false">الذكاء الاصطناعي</a></li>
+          <li><a href="#" onclick="navFilter('الهواتف والأجهزة',null);window.scrollTo({top:0,behavior:'smooth'});return false">الهواتف والأجهزة</a></li>
+          <li><a href="#" onclick="navFilter('الفضاء والعلوم',null);window.scrollTo({top:0,behavior:'smooth'});return false">الفضاء والعلوم</a></li>
+          <li><a href="#" onclick="navFilter('الأمن الرقمي',null);window.scrollTo({top:0,behavior:'smooth'});return false">الأمن الرقمي</a></li>
+          <li><a href="#" onclick="navFilter('ألعاب الفيديو',null);window.scrollTo({top:0,behavior:'smooth'});return false">ألعاب الفيديو</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title" id="footer-company-title">الشركة</div>
+        <ul class="footer-links" id="footer-col-company">
+          <li><a href="#" id="flink-about"   onclick="openFooterNewWin('flink-about');return false">من نحن</a></li>
+          <li><a href="#" id="flink-team"    onclick="openFooterNewWin('flink-team');return false">فريق التحرير</a></li>
+          <li><a href="#" id="flink-ads"     onclick="openFooterNewWin('flink-ads');return false">اعلن معنا</a></li>
+          <li><a href="#" id="flink-privacy" onclick="openFooterNewWin('flink-privacy');return false">سياسة الخصوصية</a></li>
+          <li><a href="#" id="flink-contact" onclick="openFooterNewWin('flink-contact');return false">تواصل معنا</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title" id="footer-more-title">المزيد</div>
+        <ul class="footer-links" id="footer-col-more">
+          <li><a href="#" id="flink-newsletter" onclick="openFooterNewWin('flink-newsletter');return false">📧 النشرة البريدية</a></li>
+          <li><a href="/rss.xml" id="flink-rss" target="_blank" rel="noopener">📡 خلاصة RSS</a></li>
+          <li><a href="/sitemap.xml" id="flink-sitemap" target="_blank" rel="noopener">🗺️ خريطة الموقع</a></li>
+          <li><a href="#" id="flink-terms" onclick="openFooterNewWin('flink-terms');return false">📋 شروط الاستخدام</a></li>
+          <li><a href="#" id="flink-cookie" onclick="openFooterNewWin('flink-cookie');return false">🍪 سياسة الكوكيز</a></li>
+          <li><a href="#" id="flink-accessibility" onclick="openFooterNewWin('flink-accessibility');return false">♿ إمكانية الوصول</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy" id="footer-copy">© ٢٠٢٥ الأحداث التقنية · جميع الحقوق محفوظة</span>
+      <div class="footer-socials" id="footer-socials-dynamic">
+        <a class="social-btn" id="footer-social-twitter"   href="#" title="تويتر/X">𝕏</a>
+        <a class="social-btn" id="footer-social-linkedin"  href="#" title="لينكدإن">in</a>
+        <a class="social-btn" id="footer-social-youtube"   href="#" title="يوتيوب">▶</a>
+        <a class="social-btn" id="footer-social-instagram" href="#" title="إنستغرام">📷</a>
+        <a class="social-btn" id="footer-social-facebook"  href="#" title="فيسبوك">f</a>
+        <a class="social-btn" id="footer-social-tiktok"    href="#" title="تيك توك">♪</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script type="module" src="assets/js/index.js"></script>
+</body>
+</html>
