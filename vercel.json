@@ -3,6 +3,16 @@
   "outputDirectory": "dist/src",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/(.*)\\.html$", "destination": "/$1.html" },
+    { "source": "/(.*)\\.js$", "destination": "/$1.js" },
+    { "source": "/(.*)\\.css$", "destination": "/$1.css" },
+    { "source": "/(.*)\\.json$", "destination": "/$1.json" },
+    { "source": "/(.*)\\.svg$", "destination": "/$1.svg" },
+    { "source": "/(.*)\\.png$", "destination": "/$1.png" },
+    { "source": "/(.*)\\.jpg$", "destination": "/$1.jpg" },
+    { "source": "/(.*)\\.gif$", "destination": "/$1.gif" },
+    { "source": "/(.*)\\.woff2?$", "destination": "/$1" },
+    { "source": "^(?!.*\\.).*$", "destination": "/index.html" }
   ]
 }
