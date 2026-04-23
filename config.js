@@ -5,13 +5,13 @@
 
 // ── إعدادات Firebase ─────────────────────────────────────────
 export const FIREBASE_CONFIG = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey:            "AIzaSyCk8Nz0oFiChOegbsmYNAQ8IjfFAXbnuPE",
+  authDomain:        "techevents-9c954.firebaseapp.com",
+  projectId:         "techevents-9c954",
+  storageBucket:     "techevents-9c954.firebasestorage.app",
+  messagingSenderId: "997467885128",
+  appId:             "1:997467885128:web:7d8cbe10285bf1ecbdd27d",
+  measurementId:     "G-VP1W0TTKZ4"
 };
 
 // ── مسارات Firestore ──────────────────────────────────────────
