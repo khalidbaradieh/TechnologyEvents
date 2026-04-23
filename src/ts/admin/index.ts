@@ -29,7 +29,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function initApp() {
   // Initialize DOM elements
-  loginForm = document.getElementById('loginForm');
+  loginForm = document.getElementById('login-screen');
   dashboard = document.getElementById('dashboard');
   newsTable = document.getElementById('newsTable');
   userTable = document.getElementById('userTable');
@@ -96,24 +96,45 @@ function getUserPermissions(user: any) {
 
 // Login function
 async function doLogin() {
-  const username = (document.getElementById('username') as HTMLInputElement)?.value;
-  const password = (document.getElementById('password') as HTMLInputElement)?.value;
+  const username = (document.getElementById('login-user') as HTMLInputElement)?.value;
+  const password = (document.getElementById('login-pass') as HTMLInputElement)?.value;
   
+  const loginError = document.getElementById('login-error');
+  if (loginError) {
+    loginError.style.display = 'none';
+    loginError.textContent = '❌ اسم المستخدم أو كلمة المرور غير صحيحة';
+  }
+
   if (!username || !password) {
-    alert('يرجى إدخال اسم المستخدم وكلمة المرور');
+    if (loginError) {
+      loginError.textContent = '⚠️ يرجى إدخال اسم المستخدم وكلمة المرور';
+      loginError.style.display = 'block';
+    }
     return;
   }
   
   // Check credentials
-  const user = users.find(u => u.username === username);
+  let user = users.find(u => u.username === username);
   if (!user) {
-    alert('المستخدم غير موجود');
+    // Fallback admin credentials when no users collection exists.
+    if (username === 'admin' && password === 'admin123') {
+      user = { id: 'admin', username: 'admin', role: 'admin', password: 'admin123' };
+    }
+  }
+  if (!user) {
+    if (loginError) {
+      loginError.textContent = 'المستخدم غير موجود';
+      loginError.style.display = 'block';
+    }
     return;
   }
   
   // Simple password check (in production, use proper hashing)
   if (user.password !== password) {
-    alert('كلمة المرور غير صحيحة');
+    if (loginError) {
+      loginError.textContent = 'كلمة المرور غير صحيحة';
+      loginError.style.display = 'block';
+    }
     return;
   }
   

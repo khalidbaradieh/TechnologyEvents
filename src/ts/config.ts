@@ -14,6 +14,12 @@ export const FIREBASE_CONFIG = {
   measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
+const _firebaseKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+const _firebaseMissing = _firebaseKeys.filter(k => !FIREBASE_CONFIG[k]);
+if (_firebaseMissing.length) {
+  console.error('[Firebase] Missing config keys:', _firebaseMissing.join(', '), '→ check Vercel env vars or local .env files');
+}
+
 // ── مسارات Firestore ──────────────────────────────────────────
 // news/{articleId}          ← مقال واحد لكل وثيقة
 // settings/latest           ← { items: [...] }
@@ -25,6 +31,10 @@ export const FIREBASE_CONFIG = {
 export const DB = {
   NEWS:     'news',
   SETTINGS: 'settings',
+  users:    'users',
+  rbac:     'rbac',
+  news:     'news',
+  activity: 'activity',
   S: {
     LATEST:   'latest',
     BREAKING: 'breaking',
