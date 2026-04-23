@@ -7,33 +7,44 @@
 // ── Default roles (mirrors rbac.html DEFAULT_ROLES exactly) ──────
 export const DEFAULT_ROLES = [
   {
-    id:'manager', name:'المدير العام', icon:'👑', color:'#C9A84C',
-    level:100, protected:true,
-    desc:'صلاحيات كاملة وغير محدودة على جميع أجزاء النظام',
-    perms:['*'],
+    id: 'manager', name: 'مدير عام', level: 100,
+    color: '#C9A84C', icon: '👑',
+    perms: ['*'],
+    desc: 'وصول كامل لجميع الأقسام والأدوات — لا قيود'
   },
   {
-    id:'admin', name:'مدير', icon:'🛡️', color:'#4A9EFF',
-    level:80, protected:false,
-    desc:'إدارة المحتوى والمستخدمين مع قيود محدودة على إعدادات النظام',
-    perms:['add_articles','edit_articles','delete_articles','publish_articles',
-           'approve_articles','import_articles','ai_generate',
-           'manage_homepage','manage_cats','manage_breaking','manage_ticker',
-           'manage_ads','manage_nav','manage_identity',
-           'view_analytics','view_reports','manage_emails','manage_inbox'],
+    id: 'admin', name: 'مسؤول', level: 80,
+    color: '#FF9A3C', icon: '🛡️',
+    perms: [
+      'add_articles','edit_articles','delete_articles','publish_articles',
+      'approve_articles','import_articles','ai_generate',
+      'manage_homepage','manage_cats','manage_breaking','manage_ticker',
+      'manage_ads','manage_nav','manage_identity',
+      'view_analytics','view_reports','manage_emails','manage_inbox'
+    ],
+    desc: 'صلاحيات واسعة — عدا إدارة المستخدمين والإعدادات الجذرية'
   },
   {
-    id:'editor', name:'محرر', icon:'✏️', color:'#A078FF',
-    level:60, protected:false,
-    desc:'إضافة وتعديل ونشر الأخبار واعتماد مقالات الكتّاب',
-    perms:['add_articles','edit_articles','publish_articles','approve_articles',
-           'ai_generate','manage_homepage','manage_breaking','manage_ticker','view_analytics'],
+    id: 'editor', name: 'محرر', level: 60,
+    color: '#4A9EFF', icon: '✍️',
+    perms: [
+      'add_articles','edit_articles','publish_articles',
+      'approve_articles','ai_generate',
+      'manage_breaking','manage_ticker','view_analytics'
+    ],
+    desc: 'إنشاء المحتوى ونشره وإدارة الشريط العاجل'
   },
   {
-    id:'writer', name:'كاتب', icon:'📝', color:'#3DDC84',
-    level:40, protected:false,
-    desc:'كتابة مقالات وتقديمها للمراجعة — بدون صلاحية النشر المباشر',
-    perms:['add_articles','edit_articles'],
+    id: 'writer', name: 'كاتب', level: 40,
+    color: '#A078FF', icon: '📝',
+    perms: ['add_articles','edit_articles'],
+    desc: 'كتابة الأخبار فقط — بدون نشر مباشر'
+  },
+  {
+    id: 'viewer', name: 'مراقب', level: 20,
+    color: '#3DDC84', icon: '👁️',
+    perms: ['view_analytics','view_reports'],
+    desc: 'عرض الإحصائيات فقط — لا يمكن التعديل'
   },
 ];
 

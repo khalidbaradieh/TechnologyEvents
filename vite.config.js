@@ -1,13 +1,12 @@
 import { defineConfig } from 'vite'
-import { resolve } from 'path'
 
 export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        index: resolve(__dirname, 'src/index.html'),
-        admin: resolve(__dirname, 'src/admin.html'),
-        rbac: resolve(__dirname, 'src/rbac.html')
+        index: 'src/index.html',
+        admin: 'src/admin.html',
+        rbac: 'src/rbac.html'
       },
       output: {
         entryFileNames: 'assets/[name]-[hash].js',

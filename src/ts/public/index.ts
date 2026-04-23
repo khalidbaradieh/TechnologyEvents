@@ -1,6 +1,10 @@
-import { FIREBASE_CONFIG, DB, VERSION, STORE } from '../../config.js';
-import { db, getDocument, saveSetting, getAllNews, listenToDocument, listenToCollection, addDocument } from '../../services/firebase.js';
-import { serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { FIREBASE_CONFIG, DB, VERSION, STORE } from '../config.ts';
+import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, collection, doc, onSnapshot, addDoc, serverTimestamp }
+         from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const _fbApp = initializeApp(FIREBASE_CONFIG);
+const _db    = getFirestore(_fbApp);
 
 // ── Cache Busting ─────────────────────────────────────────────────
 // When VERSION changes, wipe user-private caches that could be stale.
@@ -1758,10 +1762,13 @@ document.addEventListener('click', function(e) {
 function startFirebaseListeners() {
 
   // ── NEWS ───────────────────────────────────────────────────
-  listenToCollection(DB.NEWS, (documents) => {
-    const items = documents.filter(d => d && d.title).map(d => {
-      if (!d.id) d.id = d.id; // ensure id field
-      return d;
+  onSnapshot(collection(_db, DB.NEWS), snap => {
+    const items = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if (!data || !data.title) return;          // skip corrupt docs
+      if (!data.id) data.id = d.id;              // ensure id field
+      items.push(data);
     });
     items.sort((a, b) => Number(b.id||0) - Number(a.id||0));
     _fb.news = items.length ? items : null;
@@ -1778,34 +1785,34 @@ function startFirebaseListeners() {
   }, err => { console.warn('[FB] news:', err); _scheduleRender(); });
 
   // ── LATEST TICKER ──────────────────────────────────────────
-  listenToDocument(DB.SETTINGS, DB.S.LATEST, (data) => {
-    _fb.latest = data ? (data.items || []) : [];
+  onSnapshot(doc(_db, DB.SETTINGS, DB.S.LATEST), snap => {
+    _fb.latest = snap.exists() ? (snap.data().items || []) : [];
     try { localStorage.setItem('atq_cache_latest', JSON.stringify(_fb.latest)); } catch(_) {}
     _scheduleRender();
-  });
+  }, err => console.warn('[FB] latest:', err));
 
   // ── CATEGORIES ──────────────────────────────────────────────
-  listenToDocument(DB.SETTINGS, DB.S.CATS, (data) => {
-    if (!data) return;
-    const items = data.items || [];
+  onSnapshot(doc(_db, DB.SETTINGS, DB.S.CATS), snap => {
+    if (!snap.exists()) return;
+    const items = snap.data().items || [];
     if (!items.length) return;
     _fb.cats = items;
     _applyCatsStrip(items);
-  });
+  }, err => console.warn('[FB] cats:', err));
 
   // ── BREAKING NEWS ──────────────────────────────────────────
-  listenToDocument(DB.SETTINGS, DB.S.BREAKING, (data) => {
-    _fb.breaking = data ? (data.items || []) : [];
+  onSnapshot(doc(_db, DB.SETTINGS, DB.S.BREAKING), snap => {
+    _fb.breaking = snap.exists() ? (snap.data().items || []) : [];
     try { localStorage.setItem('atq_cache_breaking', JSON.stringify(_fb.breaking)); } catch(_) {}
     checkBreaking();
-  });
+  }, err => console.warn('[FB] breaking:', err));
 
   // ── SITE SETTINGS ──────────────────────────────────────────
   // Handles: wide_pinned, site_buttons, ticker, title, subscribe,
   //          breaking_active, breaking_start, breaking_duration
-  listenToDocument(DB.SETTINGS, DB.S.SITE, (data) => {
-    if (!data) return;
-    const s = data;
+  onSnapshot(doc(_db, DB.SETTINGS, DB.S.SITE), snap => {
+    if (!snap.exists()) return;
+    const s = snap.data();
     _fb.site = s;
     // Write a trimmed copy to cache — skip large binary fields (logos etc.)
     try {
@@ -1911,7 +1918,7 @@ async function subscribeNewsletter() {
   }
   if (btn) { btn.textContent = '⏳ جاري...'; btn.disabled = true; }
   try {
-    await addDocument('subscribers', {
+    await addDoc(collection(_db, 'subscribers'), {
       email,
       subscribedAt: serverTimestamp(),
       source: 'newsletter'
@@ -1961,7 +1968,7 @@ async function submitContact() {
   if (btn) { btn.textContent = '⏳ جارٍ الإرسال...'; btn.disabled = true; }
   errEl.style.display = 'none';
   try {
-    await addDocument('contact_messages', {
+    await addDoc(collection(_db, 'contact_messages'), {
       name, email, mobile, subject, message,
       read: false,
       createdAt: serverTimestamp(),

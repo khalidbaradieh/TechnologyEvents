@@ -1,26 +1,12 @@
 // Admin Panel TypeScript Code
 // Extracted from admin.html inline script
 
-import { FIREBASE_CONFIG, DB, STORE } from '../../config.js';
-import {
-  db,
-  getDocument,
-  setDocument,
-  getAllDocuments,
-  updateDocument,
-  deleteDocument,
-  queryDocuments,
-  addDocument,
-  listenToCollection,
-  listenToDocument,
-  getAllNews,
-  getUser,
-  saveUser,
-  getAllUsers,
-  getRbacData,
-  saveRbacData,
-  logActivity
-} from '../../services/firebase.js';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, orderBy, limit } from 'firebase/firestore';
+import { FIREBASE_CONFIG, DB, STORE } from '../config.js';
+
+const app = initializeApp(FIREBASE_CONFIG);
+const db = getFirestore(app);
 
 // Global variables
 let curUser: any = null;
@@ -43,7 +29,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function initApp() {
   // Initialize DOM elements
-  loginForm = document.getElementById('login-screen');
+  loginForm = document.getElementById('loginForm');
   dashboard = document.getElementById('dashboard');
   newsTable = document.getElementById('newsTable');
   userTable = document.getElementById('userTable');
@@ -110,45 +96,24 @@ function getUserPermissions(user: any) {
 
 // Login function
 async function doLogin() {
-  const username = (document.getElementById('login-user') as HTMLInputElement)?.value;
-  const password = (document.getElementById('login-pass') as HTMLInputElement)?.value;
+  const username = (document.getElementById('username') as HTMLInputElement)?.value;
+  const password = (document.getElementById('password') as HTMLInputElement)?.value;
   
-  const loginError = document.getElementById('login-error');
-  if (loginError) {
-    loginError.style.display = 'none';
-    loginError.textContent = '❌ اسم المستخدم أو كلمة المرور غير صحيحة';
-  }
-
   if (!username || !password) {
-    if (loginError) {
-      loginError.textContent = '⚠️ يرجى إدخال اسم المستخدم وكلمة المرور';
-      loginError.style.display = 'block';
-    }
+    alert('يرجى إدخال اسم المستخدم وكلمة المرور');
     return;
   }
   
   // Check credentials
-  let user = users.find(u => u.username === username);
+  const user = users.find(u => u.username === username);
   if (!user) {
-    // Fallback admin credentials when no users collection exists.
-    if (username === 'admin' && password === 'admin123') {
-      user = { id: 'admin', username: 'admin', role: 'admin', password: 'admin123' };
-    }
-  }
-  if (!user) {
-    if (loginError) {
-      loginError.textContent = 'المستخدم غير موجود';
-      loginError.style.display = 'block';
-    }
+    alert('المستخدم غير موجود');
     return;
   }
   
   // Simple password check (in production, use proper hashing)
   if (user.password !== password) {
-    if (loginError) {
-      loginError.textContent = 'كلمة المرور غير صحيحة';
-      loginError.style.display = 'block';
-    }
+    alert('كلمة المرور غير صحيحة');
     return;
   }
   
