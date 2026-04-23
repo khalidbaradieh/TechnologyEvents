@@ -1,4 +1,10 @@
 {
+  "version": 2,
+  "functions": {
+    "api/anthropic.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "headers": [
     {
       "source": "/assets/(.*)",
