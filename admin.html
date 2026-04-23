@@ -120,7 +120,7 @@
         </a>
 
         <div class="nav-section-title">الإدارة</div>
-        <a class="nav-item" onclick="showPage('editors', this)" data-page="editors">
+        <a class="nav-item" onclick="window.open('rbac.html','_blank','noopener');return false" data-page="editors">
           <span class="nav-icon">👥</span> إدارة المستخدمين
         </a>
 
@@ -1682,15 +1682,7 @@
           </label>
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px">
             <input type="checkbox" id="n-also-featured" style="width:14px;height:14px">
-            <span>⭐ مميز</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px">
-            <input type="checkbox" id="n-also-breaking" style="width:14px;height:14px">
-            <span>⚡ عاجل</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px">
-            <input type="checkbox" id="n-also-hero" style="width:14px;height:14px">
-            <span>🎯 مرشح للخبر الرئيسي</span>
+            <span>⭐ ابرز المقالات</span>
           </label>
         </div>
         <div style="font-size:11px;color:var(--text-dim);margin-top:4px">يمكن أن يظهر الخبر في أكثر من قسم في نفس الوقت (مثلاً: Hero + Trending).</div>
@@ -1718,18 +1710,8 @@
 
     </div>
     <div class="modal-foot">
+      <!-- Status is controlled by الحاله dropdown above — save always respects it -->
       <button class="btn-secondary" onclick="closeModal('news-modal')">إلغاء</button>
-      <!-- Writers: Save as draft -->
-      <button class="btn-secondary" id="n-save-draft-btn" onclick="saveNewsAs('مسودة')" style="display:none">💾 حفظ مسودة</button>
-      <!-- Writers: Submit for review -->
-      <button class="btn-secondary" id="n-submit-btn" onclick="saveNewsAs('مقدم')" style="display:none;color:var(--orange);border-color:rgba(255,154,60,0.4)">📨 تقديم للمراجعة</button>
-      <!-- Supervisors: Send back for revision -->
-      <button class="btn-secondary" id="n-revise-btn" onclick="saveNewsAs('يحتاج تعديل')" style="display:none;color:var(--red);border-color:rgba(255,82,82,0.3)">↩️ إرجاع للتعديل</button>
-      <!-- Editors+: Approve -->
-      <button class="btn-secondary" id="n-approve-btn" onclick="saveNewsAs('معتمد')" style="display:none;color:var(--purple);border-color:rgba(160,120,255,0.4)">✅ اعتماد</button>
-      <!-- Editors+: Publish -->
-      <button class="btn-primary" id="n-publish-btn" onclick="saveNews()" style="display:none">🌐 نشر الخبر</button>
-      <!-- Default save (respects current status selection) -->
       <button class="btn-primary" id="n-save-btn" onclick="saveNews()">💾 حفظ الخبر</button>
     </div>
   </div>

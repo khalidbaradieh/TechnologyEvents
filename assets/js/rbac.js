@@ -949,11 +949,13 @@ const _isInIframe = (() => { try { return window.self !== window.top; } catch(_)
 // Apply saved theme immediately
 (function() {
   try {
+    // Change 7: default to light theme unless user explicitly chose dark
     const t = localStorage.getItem('atq_rbac_theme');
-    if (t === 'light') {
+    if (t !== 'dark') {
       document.body.classList.add('light');
       const btn = document.getElementById('rbac-theme-btn');
       if (btn) btn.textContent = '🌙 داكن';
+      if (!t) try { localStorage.setItem('atq_rbac_theme', 'light'); } catch(_) {}
     }
   } catch(_) {}
 })();
@@ -969,7 +971,33 @@ async function init() {
   } catch(_) {}
 
   if (!_isInIframe) {
-    // Standalone new-tab: always require login
+    // Change 6: Check if a valid session exists (within 30-min window)
+    const _SESSION_MS = 30 * 60 * 1000;
+    try {
+      const stored = localStorage.getItem('atq_rbac_user');
+      if (stored) {
+        const sess = JSON.parse(stored);
+        const lastAct = sess.lastActivity || sess.loginAt || 0;
+        if (sess && sess.username && (Date.now() - lastAct) < _SESSION_MS) {
+          // Valid session — skip login screen, load directly
+          sess.lastActivity = Date.now();
+          localStorage.setItem('atq_rbac_user', sess.username ? JSON.stringify(sess) : stored);
+          // Find matching user in loaded data
+          const matched = users.find(u => u.username === sess.username)
+                       || { ...sess, active: true };
+          if (matched) {
+            curUser = matched;
+            document.getElementById('standalone-login').style.display = 'none';
+            _showTopbarUser();
+            await loadData();
+            renderStats(); renderRoles(); renderMatrix();
+            logActivity('login', 'استعادة جلسة تلقائية — RBAC');
+            return;
+          }
+        }
+      }
+    } catch(_) {}
+    // No valid session — show login, prefill username
     document.getElementById('standalone-login').style.display = 'flex';
     try {
       const stored = localStorage.getItem('atq_rbac_user');

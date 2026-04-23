@@ -333,18 +333,22 @@ function doLogin() {
     const _roleObj = _roles.find(r => r.id === rbacRoleId);
     if (roleBadge) roleBadge.textContent = (_roleObj && _roleObj.name) || legacyRole;
 
-    // ── Save RBAC session (authoritative) ──
+    // ── Save RBAC session with timestamp (Change 6: 30-min session persistence) ──
     const rbacSession = {
-      id:          editorObj ? (editorObj.id || u) : u,
-      username:    u,
-      name:        displayName,
-      roleId:      rbacRoleId,
-      customPerms: editorObj ? (editorObj.customPerms || null) : null,
+      id:           editorObj ? (editorObj.id || u) : u,
+      username:     u,
+      name:         displayName,
+      roleId:       rbacRoleId,
+      customPerms:  editorObj ? (editorObj.customPerms || null) : null,
+      loginAt:      Date.now(),
+      lastActivity: Date.now(),
     };
     try { localStorage.setItem('atq_rbac_user', JSON.stringify(rbacSession)); } catch(_) {}
 
     initDashboard();
     applyRolePermissions();
+    // Change 6: start activity tracker
+    _startActivityTracker();
     // Re-apply after async Firestore data loads
     setTimeout(applyRolePermissions, 500);
     setTimeout(applyRolePermissions, 1800);
@@ -772,10 +776,13 @@ function initDashboard() {
   _startInboxListener();
   // Update approval queue badge on load
   setTimeout(_updateApprovalBadge, 500);
-  if (localStorage.getItem('atq_admin_theme') === 'light') {
+  // Change 7: default to light theme unless user has explicitly chosen dark
+  if (localStorage.getItem('atq_admin_theme') !== 'dark') {
     document.body.classList.add('light');
     const btn = document.getElementById('admin-theme-btn');
     if (btn) btn.textContent = '🌙 داكن';
+    // Write default so explicit toggle works correctly from this point
+    if (!localStorage.getItem('atq_admin_theme')) localStorage.setItem('atq_admin_theme', 'light');
   }
 }
 
@@ -925,11 +932,13 @@ function renderNewsTable(data) {
     grouped[wk].push(n);
   });
 
-  const _canEdit   = _hasPerm('edit_articles');
-  const _canDel    = _hasPerm('delete_articles');
-  const _canTicker = _hasPerm('manage_ticker');
-  const _canBreak  = _hasPerm('manage_breaking');
-  const _canPin    = _hasPerm('manage_homepage') || _hasPerm('manage_identity');
+  const _canEdit     = _hasPerm('edit_articles');
+  const _canDel      = _hasPerm('delete_articles');
+  const _canTicker   = _hasPerm('manage_ticker');
+  const _canBreak    = _hasPerm('manage_breaking');
+  const _canPin      = _hasPerm('manage_homepage') || _hasPerm('manage_identity');
+  // Writers (add/edit only) cannot toggle comments — requires publish or approve permission
+  const _canComments = _hasPerm('publish_articles') || _hasPerm('approve_articles') || _hasPerm('manage_homepage');
 
   let html = '';
   Object.entries(grouped).forEach(([week, items]) => {
@@ -980,7 +989,8 @@ function renderNewsTable(data) {
         ? `<button class="btn-view" onclick="unpinWide()" style="background:rgba(74,158,255,0.15);color:#6BB5FF;border-color:rgba(74,158,255,0.4);font-size:11px" title="مثبت — اضغط لإلغاء">📌 ✓</button>`
         : `<button class="btn-view" onclick="pinToWide(${n.id})" style="background:rgba(74,158,255,0.07);color:#6BB5FF;border-color:rgba(74,158,255,0.2);font-size:11px">📌</button>`;
 
-      const commentBtn = n.commentsEnabled === false
+      // Change 1: writer role cannot toggle comments (no publish/approve permission)
+      const commentBtn = !_canComments ? '' : n.commentsEnabled === false
         ? `<button class="btn-view" onclick="toggleNewsComments(${n.id})" style="font-size:11px;background:rgba(255,82,82,0.08);color:#FF7070;border-color:rgba(255,82,82,0.2)" title="تعليقات مغلقة">💬✗</button>`
         : `<button class="btn-view" onclick="toggleNewsComments(${n.id})" style="font-size:11px;background:rgba(61,220,132,0.08);color:#3DDC84;border-color:rgba(61,220,132,0.2)" title="تعليقات مفعّلة">💬✓</button>`;
 
@@ -1221,7 +1231,8 @@ function resetNewsForm() {
   const trEl2 = document.getElementById('n-trending'); if(trEl2) trEl2.checked=false;
   const prEl  = document.getElementById('n-priority'); if(prEl) prEl.value='عادي';
   // Reset "also in" section checkboxes
-  ['n-also-trending','n-also-featured','n-also-breaking','n-also-hero'].forEach(id => {
+  // Change 3: only trending + featured remain (breaking + hero removed)
+  ['n-also-trending','n-also-featured'].forEach(id => {
     const el = document.getElementById(id); if (el) el.checked = false;
   });
   // Reset metadata-visibility toggles
@@ -1341,8 +1352,9 @@ function saveNews() {
     featured:   priority === 'ابرز المقالات' || chk('n-also-featured'),
     alsoTrending: chk('n-also-trending'),
     alsoFeatured: chk('n-also-featured'),
-    alsoBreaking: chk('n-also-breaking'),
-    alsoHero:     chk('n-also-hero'),
+    // Change 3: alsoBreaking + alsoHero removed from UI, default false
+    alsoBreaking: false,
+    alsoHero:     false,
     showAuthor:   chk('n-show-author'),
     showDate:     chk('n-show-date'),
     showViews:    chk('n-show-views'),
@@ -1396,6 +1408,11 @@ function saveNews() {
 }
 
 function toggleNewsComments(id) {
+  // Change 1: backend permission guard — writers cannot toggle comments
+  if (!_hasPerm('publish_articles') && !_hasPerm('approve_articles') && !_hasPerm('manage_homepage')) {
+    showToast('🚫 ليس لديك صلاحية التحكم في التعليقات');
+    return;
+  }
   const n = newsData.find(x => x.id === id);
   if (!n) return;
   n.commentsEnabled = n.commentsEnabled === false ? true : false;
@@ -1471,8 +1488,7 @@ function editNews(id) {
   const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
   setChk('n-also-trending', n.alsoTrending);
   setChk('n-also-featured', n.alsoFeatured);
-  setChk('n-also-breaking', n.alsoBreaking);
-  setChk('n-also-hero',     n.alsoHero);
+  // Change 3: alsoBreaking + alsoHero removed from UI
   // Load metadata-visibility flags (undefined defaults to true = shown)
   setChk('n-show-author', n.showAuthor !== false);
   setChk('n-show-date',   n.showDate   !== false);
@@ -1520,41 +1536,10 @@ function _toggleReviewNoteField(status) {
 
 // ── Configure action buttons in modal footer based on role + article state ──
 function _setupNewsModalButtons(article) {
-  const isNew = !article;
-  const status = article ? article.status : 'مسودة';
-  const canPublish  = _hasPerm('publish_articles');
-  const canApprove  = _hasPerm('approve_articles');
-  const canReview   = _hasPerm('review_articles');
-  const canSubmit   = _hasPerm('add_articles') || _hasPerm('edit_articles');
-  const isOwnArticle= !article || _canEditArticle(article);
-
-  // Default save button — always present for editing
-  const saveBtn    = document.getElementById('n-save-btn');
-  const draftBtn   = document.getElementById('n-save-draft-btn');
-  const submitBtn  = document.getElementById('n-submit-btn');
-  const reviseBtn  = document.getElementById('n-revise-btn');
-  const approveBtn = document.getElementById('n-approve-btn');
-  const publishBtn = document.getElementById('n-publish-btn');
-
-  // Hide all special buttons first
-  [draftBtn, submitBtn, reviseBtn, approveBtn, publishBtn].forEach(b => { if(b) b.style.display='none'; });
+  // Change 4: modal footer simplified to Cancel + Save only.
+  // Status workflow is controlled by الحاله dropdown.
+  const saveBtn = document.getElementById('n-save-btn');
   if (saveBtn) saveBtn.style.display = '';
-
-  if (!canPublish && !canApprove) {
-    // Writer / Viewer — show draft + submit
-    if (saveBtn) saveBtn.style.display = 'none';
-    if (draftBtn)  draftBtn.style.display  = '';
-    if (submitBtn) submitBtn.style.display = '';
-  } else if (canReview && !canPublish) {
-    // Supervisor — show save + revise
-    if (reviseBtn) reviseBtn.style.display = '';
-  } else if (canApprove && canPublish) {
-    // Editor / Admin / Manager — full controls
-    if (reviseBtn)  reviseBtn.style.display  = '';
-    if (approveBtn) approveBtn.style.display = '';
-    if (publishBtn) publishBtn.style.display = '';
-    if (saveBtn)    saveBtn.style.display    = 'none'; // replaced by publishBtn
-  }
 
   // Toggle review/schedule fields based on current status
   const statusSel = document.getElementById('n-status');
@@ -4936,3 +4921,150 @@ window.addEventListener('message', function(ev) {
     }
   }
 });
+
+
+// ================================================================
+// Change 2: SCHEDULED PUBLISHING
+// Checks all articles with status 'مجدول' on load and every minute.
+// Auto-publishes when scheduledAt <= now, sets status to 'مجدول - تم النشر'.
+// ================================================================
+function _checkScheduledArticles() {
+  if (!Array.isArray(newsData) || !newsData.length) return;
+  const now = Date.now();
+  let changed = false;
+  newsData.forEach(n => {
+    if (n.status !== 'مجدول') return;
+    if (!n.scheduledAt) return;
+    const scheduledTime = new Date(n.scheduledAt).getTime();
+    if (isNaN(scheduledTime) || scheduledTime > now) return;
+    // Time reached — auto-publish
+    n.status     = 'مجدول - تم النشر';
+    n.publishedAt = new Date().toLocaleDateString('ar-EG');
+    n.publishedBy = 'النظام (نشر تلقائي)';
+    _fbSetNews(n);
+    changed = true;
+    console.info('[Scheduler] Auto-published:', n.title, '→ مجدول - تم النشر');
+  });
+  if (changed) {
+    saveAll();
+    renderNewsTable(newsData);
+    showToast('🗓 تم نشر مقال مجدول تلقائياً');
+  }
+}
+
+// ================================================================
+// Change 6: SESSION PERSISTENCE — 30-minute inactivity timeout
+// Restores session on page reload if still within 30-minute window.
+// Resets activity timer on every user interaction.
+// ================================================================
+const _SESSION_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+
+function _isSessionValid(session) {
+  if (!session || !session.loginAt) return false;
+  const lastAct = session.lastActivity || session.loginAt;
+  return (Date.now() - lastAct) < _SESSION_DURATION_MS;
+}
+
+function _restoreSessionOnLoad() {
+  try {
+    const stored = localStorage.getItem('atq_rbac_user');
+    if (!stored) return;
+    const session = JSON.parse(stored);
+    if (!_isSessionValid(session)) {
+      // Session expired — clear and show login
+      localStorage.removeItem('atq_rbac_user');
+      console.info('[Session] Expired — login required');
+      return;
+    }
+    // Valid session — restore dashboard without re-entering password
+    const u = session.username;
+    if (!u) return;
+
+    // Rebuild _curUser from session
+    const roles     = _loadRoles();
+    const roleObj   = roles.find(r => r.id === session.roleId);
+    let legacyRole  = session.roleId === 'manager' ? 'مدير'
+                    : session.roleId === 'admin'    ? 'مسؤول'
+                    : session.roleId === 'editor'   ? 'محرر'
+                    : session.roleId === 'writer'   ? 'كاتب'
+                    : session.roleId === 'viewer'   ? 'مراقب' : 'محرر';
+
+    _curUser = {
+      name:     session.name || u,
+      avatar:   (session.name || u)[0].toUpperCase(),
+      role:     legacyRole,
+      username: u,
+    };
+
+    // Show dashboard
+    document.getElementById('login-screen').style.display  = 'none';
+    document.getElementById('dashboard').style.display     = 'block';
+    document.getElementById('sidebar-name').textContent    = _curUser.name;
+    document.getElementById('sidebar-avatar').textContent  = _curUser.avatar;
+    const roleBadge = document.getElementById('sidebar-role');
+    if (roleBadge) roleBadge.textContent = (roleObj && roleObj.name) || legacyRole;
+
+    // Refresh activity timestamp
+    session.lastActivity = Date.now();
+    try { localStorage.setItem('atq_rbac_user', JSON.stringify(session)); } catch(_) {}
+
+    initDashboard();
+    applyRolePermissions();
+    setTimeout(applyRolePermissions, 500);
+    setTimeout(applyRolePermissions, 1800);
+    _startActivityTracker();
+    console.info('[Session] Restored for:', _curUser.name);
+  } catch(e) {
+    console.warn('[Session] Restore error:', e.message);
+  }
+}
+
+function _startActivityTracker() {
+  // Update lastActivity on user interaction (debounced to 10s)
+  let _actTimer = null;
+  const _updateActivity = () => {
+    clearTimeout(_actTimer);
+    _actTimer = setTimeout(() => {
+      try {
+        const stored = localStorage.getItem('atq_rbac_user');
+        if (stored) {
+          const sess = JSON.parse(stored);
+          sess.lastActivity = Date.now();
+          localStorage.setItem('atq_rbac_user', JSON.stringify(sess));
+        }
+      } catch(_) { /* silent */ }
+    }, 10000);
+  };
+  ['click', 'keydown', 'mousemove', 'touchstart'].forEach(evt =>
+    document.addEventListener(evt, _updateActivity, { passive: true })
+  );
+  // Check session expiry every 2 minutes
+  setInterval(() => {
+    try {
+      const stored = localStorage.getItem('atq_rbac_user');
+      if (!stored) return;
+      const sess = JSON.parse(stored);
+      if (!_isSessionValid(sess)) {
+        showToast('⏰ انتهت جلسة العمل — سيتم تسجيل الخروج');
+        setTimeout(doLogout, 2000);
+      }
+    } catch(_) { /* silent */ }
+  }, 2 * 60 * 1000);
+}
+
+// ── Auto-restore session on page load (Change 6) ──
+(function() {
+  // Only restore if dashboard not already visible
+  const dash = document.getElementById('dashboard');
+  if (dash && dash.style.display === 'block') return;
+  _restoreSessionOnLoad();
+})();
+
+// ── Start scheduled article checker (Change 2) ──
+// Runs once on load (after data loads) + every 60s
+setTimeout(_checkScheduledArticles, 2000);
+setInterval(_checkScheduledArticles, 60 * 1000);
+
+window._checkScheduledArticles = _checkScheduledArticles;
+window._restoreSessionOnLoad   = _restoreSessionOnLoad;
+window._startActivityTracker   = _startActivityTracker;
