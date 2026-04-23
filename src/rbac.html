@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة الأعضاء والصلاحيات — RBAC</title>
+<link rel="stylesheet" href="assets/css/rbac.css">
+</head>
+<body>
+
+<!-- ── STANDALONE LOGIN ───────────────────────────────────── -->
+<div id="standalone-login">
+  <div class="login-card">
+    <div class="lc-lock">🔐</div>
+    <h2>إدارة الأعضاء والصلاحيات</h2>
+    <p>هذه الصفحة مقيّدة للمدراء فقط. يرجى تسجيل الدخول للمتابعة.</p>
+    <input class="form-input" id="rl-user" placeholder="اسم المستخدم" autocomplete="username"
+           onkeydown="if(event.key==='Enter')document.getElementById('rl-pass').focus()">
+    <input class="form-input" id="rl-pass" type="password" placeholder="كلمة المرور" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter')rbacStandaloneLogin()">
+    <button class="btn-primary" id="rl-btn" onclick="rbacStandaloneLogin()">دخول ←</button>
+    <div id="login-error-msg"></div>
+    <span class="login-back" onclick="history.back()">← العودة</span>
+  </div>
+</div>
+
+<!-- ── TOP BAR ────────────────────────────────────────── -->
+<div id="rbac-topbar">
+  <div class="logo">🔐 <span>RBAC</span></div>
+  <div class="breadcrumb">
+    <span>لوحة التحكم</span>
+    <span style="color:var(--border)">›</span>
+    <span style="color:var(--text)">إدارة الأعضاء والصلاحيات</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="cur-user" id="cur-user-display" style="display:none">
+    <div class="avatar" id="topbar-avatar" style="background:rgba(201,168,76,0.15);color:var(--gold)">م</div>
+    <div>
+      <div style="font-size:13px;font-weight:600" id="topbar-name">—</div>
+      <div style="font-size:10px;color:var(--text-dim)" id="topbar-role">—</div>
+    </div>
+  </div>
+  <button class="btn-back" id="rbac-theme-btn" onclick="toggleRbacTheme()" title="تبديل السمة">🌙 فاتح</button>
+  <button class="btn-back" id="rbac-logout-btn" onclick="doRbacLogout()" style="display:none;color:var(--red);border-color:rgba(255,82,82,0.3)">⏻ خروج</button>
+  <button class="btn-back" onclick="window.parent.postMessage('rbac:back','*')">← لوحة التحكم</button>
+</div>
+
+<!-- ── TAB BAR ────────────────────────────────────────── -->
+<div id="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('users',this)"><span class="tab-icon">👥</span> الأعضاء</button>
+  <button class="tab-btn" onclick="switchTab('roles',this)"><span class="tab-icon">🏅</span> الأدوار</button>
+  <button class="tab-btn" onclick="switchTab('matrix',this)"><span class="tab-icon">🔑</span> مصفوفة الصلاحيات</button>
+  <button class="tab-btn" onclick="switchTab('log',this)"><span class="tab-icon">📋</span> سجل النشاط</button>
+  <button class="tab-btn" onclick="switchTab('password',this)"><span class="tab-icon">🔑</span> تغيير كلمة المرور</button>
+</div>
+
+<!-- ── MAIN ───────────────────────────────────────────── -->
+<div id="rbac-main">
+
+  <!-- Access Denied -->
+  <div id="access-denied">
+    <div class="ad-icon">🔒</div>
+    <h2>وصول مقيّد</h2>
+    <p>ليس لديك صلاحية الوصول إلى هذه الصفحة. يرجى التواصل مع المدير العام.</p>
+    <button class="btn-back" onclick="window.parent.postMessage('rbac:back','*')">العودة للوحة التحكم</button>
+  </div>
+
+  <!-- ── USERS TAB ─────────────────────────────────────── -->
+  <div id="tab-users" class="tab-pane active">
+    <div class="stats-row" id="stats-row"></div>
+    <div class="toolbar">
+      <input class="search-inp" id="user-search" placeholder="ابحث بالاسم أو اسم المستخدم..." oninput="filterUsers()">
+      <select class="filter-sel" id="role-filter" onchange="filterUsers()">
+        <option value="">كل الأدوار</option>
+      </select>
+      <select class="filter-sel" id="status-filter" onchange="filterUsers()">
+        <option value="">كل الحالات</option>
+        <option value="active">نشط</option>
+        <option value="suspended">موقوف</option>
+      </select>
+      <button class="btn-primary" id="add-user-btn" onclick="openUserModal()">＋ إضافة عضو</button>
+    </div>
+    <div id="users-grid"></div>
+  </div>
+
+  <!-- ── ROLES TAB ─────────────────────────────────────── -->
+  <div id="tab-roles" class="tab-pane">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--text)">التسلسل الهرمي للأدوار</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:3px">يرث كل دور صلاحيات الدور الأدنى منه في الهرمية</div>
+      </div>
+      <button class="btn-primary" id="add-role-btn" onclick="openRoleModal()" style="display:none">＋ إضافة دور جديد</button>
+    </div>
+    <div id="roles-container"></div>
+  </div>
+
+  <!-- ── MATRIX TAB ─────────────────────────────────────── -->
+  <div id="tab-matrix" class="tab-pane">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--text)">مصفوفة الصلاحيات</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:3px">تحكم في صلاحيات كل دور — ✅ ممنوح &nbsp; ❌ محجوب</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="matrix-edit-hint" style="font-size:11px;color:var(--text-dim)"></span>
+        <button class="btn-primary" id="matrix-edit-btn" onclick="toggleMatrixEdit()" style="display:none">✏️ تعديل</button>
+        <button class="btn-secondary" id="matrix-save-btn" onclick="saveMatrix()" style="display:none">💾 حفظ التغييرات</button>
+      </div>
+    </div>
+    <div id="matrix-wrap">
+      <table id="perm-matrix"><tbody id="matrix-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ── LOG TAB ───────────────────────────────────────── -->
+  <div id="tab-log" class="tab-pane">
+    <div class="toolbar" style="margin-bottom:14px">
+      <input class="search-inp" id="log-search" placeholder="بحث في السجل..." oninput="filterLog()" style="max-width:260px">
+      <select class="filter-sel" id="log-action-filter" onchange="filterLog()">
+        <option value="">كل الإجراءات</option>
+        <option value="create">إنشاء</option>
+        <option value="edit">تعديل</option>
+        <option value="delete">حذف</option>
+        <option value="login">تسجيل دخول</option>
+        <option value="perm">تغيير صلاحية</option>
+        <option value="suspend">تعليق/تفعيل</option>
+      </select>
+      <button class="btn-secondary" onclick="clearLog()" id="clear-log-btn" style="display:none">🗑 مسح السجل</button>
+    </div>
+    <div id="log-table-wrap">
+      <table id="log-table">
+        <thead><tr>
+          <th>التوقيت</th><th>المستخدم</th><th>الإجراء</th><th>التفاصيل</th>
+        </tr></thead>
+        <tbody id="log-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── PASSWORD TAB ─────────────────────────────────── -->
+  <div id="tab-password" class="tab-pane">
+    <div style="max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
+      <!-- Own password change -->
+      <div style="background:var(--dark-3);border:1px solid var(--border-dim);border-radius:var(--radius);padding:24px">
+        <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">🔑 تغيير كلمة مرورك</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:20px">تغيير كلمة المرور الخاصة بحسابك الحالي</div>
+        <div id="pw-rbac-error"   style="display:none;background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.25);border-radius:8px;padding:10px 14px;font-size:13px;color:#FF7070;margin-bottom:14px"></div>
+        <div id="pw-rbac-success" style="display:none;background:rgba(61,220,132,0.1);border:1px solid rgba(61,220,132,0.25);border-radius:8px;padding:10px 14px;font-size:13px;color:#3DDC84;margin-bottom:14px"></div>
+        <div class="form-group">
+          <label class="form-label">كلمة المرور الحالية *</label>
+          <input class="form-input" type="password" id="rbac-pw-current" placeholder="••••••••">
+        </div>
+        <div class="form-group">
+          <label class="form-label">كلمة المرور الجديدة *</label>
+          <input class="form-input" type="password" id="rbac-pw-new" placeholder="6 أحرف على الأقل" oninput="rbacCheckPwStrength(this.value)">
+          <div id="rbac-pw-bar" style="height:4px;border-radius:2px;background:var(--dark-4);margin-top:6px;overflow:hidden">
+            <div id="rbac-pw-fill" style="height:100%;width:0;border-radius:2px;transition:.3s"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">تأكيد كلمة المرور الجديدة *</label>
+          <input class="form-input" type="password" id="rbac-pw-confirm" placeholder="أعد الكتابة للتأكيد">
+        </div>
+        <button class="btn-primary" onclick="changeRbacPassword()" style="width:100%;padding:10px;margin-top:4px">تحديث كلمة المرور</button>
+      </div>
+      <!-- Manager only: change other member passwords -->
+      <div id="admin-pw-section" style="display:none;background:var(--dark-3);border:1px solid var(--border-dim);border-radius:var(--radius);padding:24px">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">🔐 تغيير كلمة مرور عضو آخر</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">صلاحية المدير العام فقط</div>
+        <div class="form-group">
+          <label class="form-label">اختر العضو</label>
+          <select class="form-select" id="admin-pw-user"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">كلمة المرور الجديدة *</label>
+          <input class="form-input" type="password" id="admin-pw-new" placeholder="6 أحرف على الأقل">
+        </div>
+        <div id="admin-pw-msg" style="font-size:12px;margin-top:6px;min-height:18px"></div>
+        <button class="btn-primary" onclick="adminChangeOtherPassword()" style="margin-top:10px">تحديث</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /rbac-main -->
+
+<!-- ── USER MODAL ─────────────────────────────────────── -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="user-modal-title">إضافة عضو جديد</div>
+      <button class="modal-close" onclick="closeUserModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="u-edit-id">
+
+      <!-- Avatar preview -->
+      <div style="display:flex;justify-content:center;margin-bottom:16px">
+        <div id="u-avatar-preview" class="avatar" style="width:56px;height:56px;font-size:22px;background:rgba(201,168,76,0.15);color:var(--gold)">م</div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">الاسم الكامل *</label>
+          <input class="form-input" id="u-name" placeholder="أحمد محمد" oninput="updateAvatarPreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">اسم المستخدم *</label>
+          <input class="form-input" id="u-username" placeholder="ahmed.m" style="font-family:monospace">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">البريد الإلكتروني *</label>
+        <input class="form-input" id="u-email" type="email" placeholder="ahmed@example.com">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">كلمة المرور</label>
+          <input class="form-input" id="u-pass" type="password" placeholder="اتركه فارغاً للإبقاء">
+        </div>
+        <div class="form-group">
+          <label class="form-label">الحالة</label>
+          <div class="toggle-row">
+            <span style="font-size:13px;color:var(--text-muted)">نشط</span>
+            <label class="toggle-switch"><input type="checkbox" id="u-active" checked><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Role selector -->
+      <div class="form-group">
+        <label class="form-label">الدور *</label>
+        <div class="role-selector" id="role-selector"></div>
+      </div>
+
+      <!-- Allowed categories -->
+      <div class="form-group" id="cats-section">
+        <label class="form-label">أقسام الأخبار المسموح بها <span style="font-size:10px;color:var(--text-dim)">(بدون تحديد = جميع الأقسام)</span></label>
+        <div style="background:var(--dark-4);border:1px solid var(--border-dim);border-radius:8px;padding:10px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+            <span style="font-size:11px;color:var(--text-dim)">الأقسام التي يمكن النشر فيها</span>
+            <div style="display:flex;gap:6px">
+              <button type="button" class="btn-secondary" style="padding:2px 8px;font-size:10px" onclick="selectAllCats(true)">الكل</button>
+              <button type="button" class="btn-secondary" style="padding:2px 8px;font-size:10px" onclick="selectAllCats(false)">لا شيء</button>
+            </div>
+          </div>
+          <div class="cats-grid" id="u-cats-list"></div>
+        </div>
+      </div>
+
+      <!-- Custom permissions override (collapsible) -->
+      <div class="form-group">
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:8px 0" onclick="togglePermOverride()">
+          <label class="form-label" style="cursor:pointer;margin:0">🔑 تخصيص الصلاحيات يدوياً <span style="font-size:10px;color:var(--text-dim)">(اختياري — يُلغي صلاحيات الدور الافتراضية)</span></label>
+          <span id="perm-toggle-icon" style="color:var(--text-dim)">▼</span>
+        </div>
+        <div id="perm-override-panel" style="display:none;background:var(--dark-4);border:1px solid var(--border-dim);border-radius:8px;padding:12px;margin-top:4px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+            <label class="check-row" style="gap:8px">
+              <input type="checkbox" id="u-use-custom-perms" onchange="toggleCustomPerms(this.checked)" style="width:14px;height:14px;accent-color:var(--gold)">
+              <span style="font-size:12px;color:var(--text-muted)">تفعيل الصلاحيات المخصصة</span>
+            </label>
+            <div style="display:flex;gap:6px" id="perm-select-btns" style="display:none">
+              <button type="button" class="btn-secondary" style="padding:2px 8px;font-size:10px" onclick="selectAllPerms(true)">منح الكل</button>
+              <button type="button" class="btn-secondary" style="padding:2px 8px;font-size:10px" onclick="selectAllPerms(false)">سحب الكل</button>
+            </div>
+          </div>
+          <div class="perm-override-grid" id="u-perms-list"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn-secondary" onclick="closeUserModal()">إلغاء</button>
+      <button class="btn-primary" onclick="saveUser()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ROLE MODAL ──────────────────────────────────────── -->
+<div class="modal-overlay" id="role-modal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <div class="modal-title" id="role-modal-title">إضافة دور جديد</div>
+      <button class="modal-close" onclick="closeModal('role-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="r-edit-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">اسم الدور *</label>
+          <input class="form-input" id="r-name" placeholder="مثال: مشرف">
+        </div>
+        <div class="form-group">
+          <label class="form-label">المستوى (1–100)</label>
+          <input class="form-input" id="r-level" type="number" min="1" max="99" placeholder="50">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">الأيقونة</label>
+          <input class="form-input" id="r-icon" placeholder="🔰">
+        </div>
+        <div class="form-group">
+          <label class="form-label">اللون</label>
+          <input class="form-input" id="r-color" type="color" value="#4A9EFF">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الوصف</label>
+        <input class="form-input" id="r-desc" placeholder="وصف مختصر لهذا الدور...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">الصلاحيات الافتراضية</label>
+        <div id="r-perms-list" style="background:var(--dark-4);border:1px solid var(--border-dim);border-radius:8px;padding:10px;max-height:200px;overflow-y:auto">
+          <div class="perm-override-grid" id="r-perms-grid"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-secondary" onclick="closeModal('role-modal')">إلغاء</button>
+      <button class="btn-primary" onclick="saveRole()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ───────────────────────────────────────────── -->
+<div id="rbac-toast"></div>
+
+<script type="module" src="ts/rbac/index.ts"></script>
+</body>
+</html>

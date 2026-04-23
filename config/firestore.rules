@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow public read access for the current app.
+    // WARNING: This is open access and should be tightened for production.
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
