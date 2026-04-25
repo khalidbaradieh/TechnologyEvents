@@ -957,9 +957,12 @@ function renderNewsTable(data) {
       // ── Full workflow status badge ─────────────────────────
       const wf = NEWS_WORKFLOW[n.status] || NEWS_WORKFLOW['مسودة'];
       // Fix 8: clickable badge when منشور — opens article on public site
-      const isPublished = n.status === 'منشور' || n.status === 'مجدول - تم النشر';
+      // Also show 'مجدول - تم النشر' badge for auto-published scheduled articles
+      const isPublished = n.status === 'منشور';
+      const schedLabel  = (n.scheduledPublished && n.status === 'منشور') ? '🗓 مجدول - تم النشر' : null;
+      const displayLabel = schedLabel || (wf.icon + ' ' + wf.label);
       const statusBadge = isPublished
-        ? `<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:${wf.bg};color:${wf.color};white-space:nowrap;cursor:pointer" title="انقر لمعاينة الخبر على الموقع" onclick="_previewNewsOnSite(${n.id})">${wf.icon} ${wf.label} ↗</span>`
+        ? `<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:${wf.bg};color:${wf.color};white-space:nowrap;cursor:pointer" title="انقر لمعاينة الخبر على الموقع" onclick="_previewNewsOnSite(${n.id})">${displayLabel} ↗</span>`
         : `<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:${wf.bg};color:${wf.color};white-space:nowrap">${wf.icon} ${wf.label}</span>`;
 
       // ── Review note tooltip if present ─────────────────────
@@ -5013,18 +5016,22 @@ function _checkScheduledArticles() {
     if (!n.scheduledAt) return;
     const scheduledTime = new Date(n.scheduledAt).getTime();
     if (isNaN(scheduledTime) || scheduledTime > now) return;
-    // Time reached — auto-publish
-    n.status     = 'مجدول - تم النشر';
-    n.publishedAt = new Date().toLocaleDateString('ar-EG');
-    n.publishedBy = 'النظام (نشر تلقائي)';
+
+    // ── Auto-publish: time has arrived ────────────────────────
+    // status = 'منشور' so the public site onSnapshot immediately shows it.
+    // scheduledPublished = true lets the admin table display 'مجدول - تم النشر' badge.
+    n.status           = 'منشور';
+    n.scheduledPublished = true;
+    n.publishedAt      = new Date().toLocaleDateString('ar-EG');
+    n.publishedBy      = 'النظام (نشر مجدول)';
     _fbSetNews(n);
     changed = true;
-    console.info('[Scheduler] Auto-published:', n.title, '→ مجدول - تم النشر');
+    console.info('[Scheduler] Auto-published:', n.title);
   });
   if (changed) {
     saveAll();
     renderNewsTable(newsData);
-    showToast('🗓 تم نشر مقال مجدول تلقائياً');
+    showToast('🗓 تم النشر التلقائي للمقال المجدول');
   }
 }
 
