@@ -32,7 +32,8 @@ import { openArticle, closeArticle, openById,
          openArticleFromEl, openArticleFromWide,
          shareArticle, toggleArticleLike,
          toggleBookmark, submitComment,
-         renderSuggestedNews }                  from '/assets/js/site-article.js';
+         renderSuggestedNews,
+         loadLikeCountForArticle }              from '/assets/js/site-article.js';
 import { scrollTrending }                       from '/assets/js/site-news-render.js';
 import { checkBreaking, closeBreaking }         from '/assets/js/site-breaking.js';
 import { _startTickerRAF, applyTickerSpeed }    from '/assets/js/site-ticker.js';
@@ -311,6 +312,7 @@ window.submitComment        = submitComment;
 window.submitContact        = submitContact;
 window.subscribeNewsletter  = subscribeNewsletter;
 window.toggleArticleLike    = toggleArticleLike;
+window.loadLikeCountForArticle = loadLikeCountForArticle;
 window.toggleBookmark       = toggleBookmark;
 window.toggleLang           = toggleLang;
 window.toggleMobileNav      = toggleMobileNav;

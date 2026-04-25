@@ -121,8 +121,11 @@
 
     <!-- INTERACTIONS BAR (share, reactions, bookmark — per-button toggles from admin) -->
     <div class="article-share" id="article-interactions">
-      <span class="article-share-label">التفاعل مع المقال:</span>
-      <button class="share-btn like-btn" data-int="like" id="like-btn" onclick="toggleArticleLike()">👍 <span id="like-count">٠</span></button>
+      <!-- Fix 8: improved like button with cumulative count, no label text -->
+      <button class="share-btn like-btn" data-int="like" id="like-btn" onclick="toggleArticleLike()" title="إعجاب">
+        <span id="like-heart" style="font-size:16px;transition:transform .15s">🤍</span>
+        <span id="like-count" style="font-size:13px;font-weight:700;min-width:18px;text-align:center">٠</span>
+      </button>
       <button class="share-btn"    data-int="share"    onclick="shareArticle('native')">🔗 مشاركة</button>
       <button class="share-btn"    data-int="facebook" onclick="shareArticle('facebook')">📘 Facebook</button>
       <button class="share-btn"    data-int="twitter"  onclick="shareArticle('twitter')">𝕏 X</button>

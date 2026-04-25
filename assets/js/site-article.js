@@ -11,8 +11,10 @@ import { calcReadTime, showToast,
          toArabicDigits, parseCount,
          formatCount }              from '/modules/helpers.js';
 import { getBookmarks, saveBookmarks,
-         getLikeCounts, saveLikeCounts,
          getLikedByMe,  saveLikedByMe } from '/modules/storage.js';
+import { db }                       from '/modules/firebase.js';
+import { doc, getDoc, setDoc, increment }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 // Session-level set of already-viewed article IDs (prevents double-counting per session)
 const _VIEWED_KEY = 'atq_viewed_articles';
@@ -213,6 +215,9 @@ export function openArticle(article) {
 
   _updateBookmarkBtn(article);
 
+  // Fix 8: Load cumulative like count from Firebase for this article
+  loadLikeCountForArticle(article).catch(() => {});
+
   // Footer pages: hide interactions + related news
   const interactBar   = document.getElementById('article-interactions');
   const suggestedWrap = document.getElementById('article-suggested');
@@ -310,35 +315,72 @@ export function shareArticle(platform) {
   if (urls[platform]) window.open(urls[platform], '_blank', 'noopener');
 }
 
-// ─── LIKES ────────────────────────────────────────────────────────
-function _refreshLikeUI() {
-  const art = window._currentArticle;
-  if (!art) return;
-  const counts = getLikeCounts();
-  const mine   = getLikedByMe();
-  const n   = counts[String(art.id)] || 0;
-  const btn = document.getElementById('like-btn');
-  const lc  = document.getElementById('like-count');
-  if (lc)  lc.textContent = toArabicDigits(formatCount(n) || '0');
-  if (btn) btn.classList.toggle('liked', !!mine[String(art.id)]);
+// ─── LIKES (Firebase-backed cumulative count) ────────────────────
+// Storage: Firestore likes/{articleId} → { count: number } (shared globally)
+// Per-device "liked by me" state → localStorage only (privacy-respecting)
+
+const _LIKES_COL = 'likes';
+const _likesCache = {}; // in-memory { articleId: count }
+
+async function _loadLikeCount(id) {
+  const key = String(id);
+  try {
+    const snap = await getDoc(doc(db, _LIKES_COL, key));
+    const n = snap.exists() ? (Number(snap.data().count) || 0) : 0;
+    _likesCache[key] = n;
+    return n;
+  } catch (_) { return _likesCache[key] || 0; }
 }
 
-export function toggleArticleLike() {
+function _refreshLikeUI(count) {
+  const art   = window._currentArticle;
+  if (!art) return;
+  const key   = String(art.id);
+  const mine  = getLikedByMe();
+  const n     = count !== undefined ? count : (_likesCache[key] || 0);
+  const liked = !!mine[key];
+  const lc    = document.getElementById('like-count');
+  const heart = document.getElementById('like-heart');
+  const btn   = document.getElementById('like-btn');
+  if (lc)    lc.textContent    = toArabicDigits(n > 0 ? formatCount(n) : '٠');
+  if (heart) heart.textContent  = liked ? '❤️' : '🤍';
+  if (btn)   btn.classList.toggle('liked', liked);
+}
+
+export async function loadLikeCountForArticle(article) {
+  if (!article || !article.id) return;
+  const n = await _loadLikeCount(article.id);
+  _refreshLikeUI(n);
+}
+
+export async function toggleArticleLike() {
   const art = window._currentArticle;
   if (!art || !art.id) return;
-  const key    = String(art.id);
-  const counts = getLikeCounts();
-  const mine   = getLikedByMe();
-  if (mine[key]) {
-    counts[key] = Math.max(0, (counts[key] || 1) - 1);
-    delete mine[key];
-  } else {
-    counts[key] = (counts[key] || 0) + 1;
-    mine[key]   = true;
-  }
-  saveLikeCounts(counts);
+  const key   = String(art.id);
+  const mine  = getLikedByMe();
+  const liked = !!mine[key];
+
+  // Optimistic update
+  const cur   = _likesCache[key] || 0;
+  const next  = liked ? Math.max(0, cur - 1) : cur + 1;
+  _likesCache[key] = next;
+  if (liked) { delete mine[key]; } else { mine[key] = true; }
   saveLikedByMe(mine);
-  _refreshLikeUI();
+  _refreshLikeUI(next);
+
+  // Animate heart on like
+  if (!liked) {
+    const heart = document.getElementById('like-heart');
+    if (heart) { heart.style.transform = 'scale(1.5)'; setTimeout(() => heart.style.transform = '', 200); }
+  }
+
+  // Persist to Firebase
+  try {
+    await setDoc(doc(db, _LIKES_COL, key), { count: increment(liked ? -1 : 1) }, { merge: true });
+    // Sync actual count back
+    const actual = await _loadLikeCount(key);
+    _refreshLikeUI(actual);
+  } catch (_) { /* optimistic count remains */ }
 }
 
 // ─── BOOKMARKS ────────────────────────────────────────────────────
