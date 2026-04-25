@@ -34,8 +34,11 @@ export function checkBreaking() {
 
   // Combine explicit breaking items + news flagged as alsoBreaking/عاجل
   const active = (_fb.breaking || []).filter(b => b.active === true);
+  // Fix 1: priority='عاجل' is a homepage/card badge — it does NOT auto-inject into
+  // شريط الأخبار العاجلة. That strip is managed independently via the Breaking News panel.
+  // Only alsoBreaking flag (set explicitly by editor) adds to the bar.
   const alsoBreakingItems = (_fb.news || [])
-    .filter(n => n.status === 'منشور' && (n.alsoBreaking === true || n.priority === 'عاجل'))
+    .filter(n => n.status === 'منشور' && n.alsoBreaking === true)
     .map(n => ({ active: true, text: n.title }));
   const allActive = [...active, ...alsoBreakingItems];
 

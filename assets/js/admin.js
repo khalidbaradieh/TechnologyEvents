@@ -776,6 +776,9 @@ function initDashboard() {
   _startInboxListener();
   // Update approval queue badge on load
   setTimeout(_updateApprovalBadge, 500);
+  // Fix 5: populate overview with real data after Firebase loads
+  setTimeout(loadAnalytics, 800);
+  setTimeout(buildChart, 850);
   // Change 7: default to light theme unless user has explicitly chosen dark
   if (localStorage.getItem('atq_admin_theme') !== 'dark') {
     document.body.classList.add('light');
@@ -830,6 +833,7 @@ function showPage(id, el) {
   if (id === 'approval-queue') renderApprovalQueue();
   if (id === 'subscribers') loadSubscribers();
   if (id === 'analytics') loadAnalytics();
+  if (id === 'overview') { loadAnalytics(); buildChart(); } // Fix 5: real data on overview
   if (id === 'footer-control') { renderFooterColEditor('company'); renderFooterColEditor('more'); renderSocialMedia(); loadPageControls(); }
   if (id === 'ads-manager') { renderAdsManager(); loadLayoutSettings(); }
   if (id === 'nav-links-manager') renderNavMenuEditor();
@@ -952,7 +956,11 @@ function renderNewsTable(data) {
 
       // ── Full workflow status badge ─────────────────────────
       const wf = NEWS_WORKFLOW[n.status] || NEWS_WORKFLOW['مسودة'];
-      const statusBadge = `<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:${wf.bg};color:${wf.color};white-space:nowrap">${wf.icon} ${wf.label}</span>`;
+      // Fix 8: clickable badge when منشور — opens article on public site
+      const isPublished = n.status === 'منشور' || n.status === 'مجدول - تم النشر';
+      const statusBadge = isPublished
+        ? `<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:${wf.bg};color:${wf.color};white-space:nowrap;cursor:pointer" title="انقر لمعاينة الخبر على الموقع" onclick="_previewNewsOnSite(${n.id})">${wf.icon} ${wf.label} ↗</span>`
+        : `<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:${wf.bg};color:${wf.color};white-space:nowrap">${wf.icon} ${wf.label}</span>`;
 
       // ── Review note tooltip if present ─────────────────────
       const reviewTooltip = n.reviewNote
@@ -1989,10 +1997,43 @@ function _renderEditorCatsList(allowed) {
 
 // ─── ANALYTICS ────────────────────────────────────────────────
 function loadAnalytics() {
-  const pub = newsData.filter(n => n.status === 'منشور');
+  const pub      = newsData.filter(n => n.status === 'منشور');
+  const drafts   = newsData.filter(n => n.status === 'مسودة');
+  const pending  = newsData.filter(n => ['مقدم','قيد المراجعة'].includes(n.status));
+  const scheduled = newsData.filter(n => n.status === 'مجدول');
+  const today    = new Date().toLocaleDateString('ar-EG');
+  const todayPub = pub.filter(n => String(n.date || '').includes(String(new Date().getDate())));
+
   document.getElementById('an-total-news').textContent = newsData.length;
   document.getElementById('an-pub-news').textContent   = pub.length;
   document.getElementById('an-editors').textContent    = editorsData.length;
+
+  // Update overview stat boxes with real data
+  const _setStat = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  _setStat('ov-stat-total',     newsData.length);
+  _setStat('ov-stat-published', pub.length);
+  _setStat('ov-stat-pending',   pending.length);
+  _setStat('ov-stat-scheduled', scheduled.length);
+  _setStat('ov-stat-editors',   editorsData.length);
+  _setStat('ov-stat-drafts',    drafts.length);
+
+  // Rebuild recent activity from real news data (last 8 published)
+  const recentNews = [...pub].sort((a,b) => Number(b.id||0)-Number(a.id||0)).slice(0, 8);
+  const activityEl = document.getElementById('ov-activity-list');
+  if (activityEl && recentNews.length) {
+    const icons = { 'منشور':'🟢', 'مسودة':'🟡', 'مقدم':'🟠', 'معتمد':'🟣' };
+    activityEl.innerHTML = recentNews.map(n => `
+      <div class="activity-item">
+        <div class="activity-dot" style="background:var(--green)"></div>
+        <div>
+          <div class="activity-text"><strong>${n.author||'محرر'}</strong> نشر: ${n.title.substring(0,40)}${n.title.length>40?'...':''}</div>
+          <div class="activity-time">${n.cat} — ${n.date||'—'}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Rebuild chart with fresh data
+  buildChart();
 
   // Subscriber count
   const subBadge = document.getElementById('subscribers-count-badge');
@@ -3618,7 +3659,26 @@ function renderAdsManager() {
     </div>`;
   }).join('');
   // Load preview for each
-  ADS_CONFIG.forEach(cfg => { try { saveAdBanner(cfg.slot); } catch(_) {} });
+  // Fix 4: use _previewAdBanner (read-only) instead of saveAdBanner to avoid phantom toast
+  ADS_CONFIG.forEach(cfg => { try { _previewAdBanner(cfg.slot); } catch(_) {} });
+}
+
+// Fix 4: Preview ad banner without saving to Firebase (no toast)
+function _previewAdBanner(slot) {
+  const data = (_siteSettingsCache && _siteSettingsCache['ad_' + slot]) || {};
+  const previewEl = document.getElementById('ad-' + slot + '-preview');
+  if (!previewEl) return;
+  if (data.videoUrl) {
+    previewEl.innerHTML = `<video src="${data.videoUrl}" autoplay muted loop playsinline style="width:100%;max-height:120px;object-fit:cover;border-radius:8px"></video>`;
+  } else if (data.imageUrl) {
+    previewEl.innerHTML = `<img src="${data.imageUrl}" alt="" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px">`;
+  } else if (data.html) {
+    previewEl.innerHTML = `<div style="padding:8px;font-size:11px;color:var(--text-dim);border-radius:8px;background:var(--dark-4)">${data.html.substring(0,80)}...</div>`;
+  } else if (data.text) {
+    previewEl.innerHTML = `<div style="padding:12px;text-align:center;font-size:13px;color:var(--text)">${data.text}</div>`;
+  } else {
+    previewEl.innerHTML = '<span style="font-size:11px;color:var(--text-dim)">معاينة البانر</span>';
+  }
 }
 
 // ─── EDITOR ACCESS CONTROL ────────────────────────────────────────
@@ -3801,7 +3861,7 @@ function loadAdBanners() {
     if (hEl)      hEl.value      = d.height    || 'auto';
     if (mtEl)     mtEl.value     = (d.marginTop    != null ? d.marginTop    : '');
     if (mbEl)     mbEl.value     = (d.marginBottom != null ? d.marginBottom : '');
-    saveAdBanner(slot); // refresh preview
+    _previewAdBanner(slot); // Fix 4: preview only — no Firebase save, no toast
   });
   // Comments
   const commEl = document.getElementById('ctrl-comments-global');
@@ -3975,16 +4035,32 @@ function showToast(msg) {
 
 // ─── CHART ────────────────────────────────────────────────────
 function buildChart() {
-  const days = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
-  const vals = [42000,58000,51000,73000,67000,86000,61000];
-  const max  = Math.max(...vals);
   const area = document.getElementById('chart-area');
   if (!area) return;
-  area.innerHTML = days.map((d,i) => {
-    const h = Math.round((vals[i]/max)*120);
-    return `<div class="bar-wrap">
-      <div class="bar" style="height:${h}px;background:${i===5?'var(--gold)':'rgba(201,168,76,0.25)'}"></div>
-      <span class="bar-lbl">${d}</span>
+  // Real data: count published news by day-of-week from newsData
+  const dayCounts = [0,0,0,0,0,0,0]; // Sun=0..Sat=6
+  const dayLabels = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  newsData.filter(n => n.status === 'منشور').forEach(n => {
+    const raw = String(n.date || '').replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+    const parts = raw.split(/[\/\-\.]/);
+    if (parts.length < 3) return;
+    const [y, m, d] = parts[0].length === 4
+      ? [parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2])]
+      : [parseInt(parts[2]), parseInt(parts[1]), parseInt(parts[0])];
+    if (!y || !m || !d) return;
+    const day = new Date(y, m-1, d).getDay();
+    if (!isNaN(day)) dayCounts[day]++;
+  });
+  const max = Math.max(...dayCounts, 1);
+  // Order starting from Saturday (Arab calendar)
+  const order = [6,0,1,2,3,4,5];
+  area.innerHTML = order.map(i => {
+    const h = Math.round((dayCounts[i]/max)*120);
+    const isMax = dayCounts[i] === max && dayCounts[i] > 0;
+    return `<div class="bar-wrap" title="${dayLabels[i]}: ${dayCounts[i]} خبر">
+      <div style="font-size:10px;color:${isMax?'var(--gold)':'var(--text-dim)'};text-align:center;margin-bottom:4px;font-weight:${isMax?700:400}">${dayCounts[i]||''}</div>
+      <div class="bar" style="height:${Math.max(h,2)}px;background:${isMax?'var(--gold)':'rgba(201,168,76,0.25)'}"></div>
+      <span class="bar-lbl">${dayLabels[i].substring(0,3)}</span>
     </div>`;
   }).join('');
 }
@@ -5068,3 +5144,13 @@ setInterval(_checkScheduledArticles, 60 * 1000);
 window._checkScheduledArticles = _checkScheduledArticles;
 window._restoreSessionOnLoad   = _restoreSessionOnLoad;
 window._startActivityTracker   = _startActivityTracker;
+
+
+// Fix 8: Open published article on public site in new tab
+function _previewNewsOnSite(id) {
+  const n = newsData.find(x => x.id === id);
+  if (!n) return;
+  const siteUrl = window.location.origin.replace('/admin.html','').replace('admin.html','') + '/index.html#article-' + id;
+  window.open(siteUrl, '_blank', 'noopener');
+}
+window._previewNewsOnSite = _previewNewsOnSite;

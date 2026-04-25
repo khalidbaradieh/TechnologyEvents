@@ -93,49 +93,82 @@ export function _applyAdBanner(slot, data) {
 
 /**
  * Apply custom admin-defined banners to the page.
- * These are separate from the 5 built-in slots.
+ * Fix 2: Uses b.slot (not b.location), correct active check, proper wrap management.
  * @param {Object[]} banners
  */
 export function _applyCustomBanners(banners) {
   if (!Array.isArray(banners)) return;
-  // Clean up previous custom banners
-  document.querySelectorAll('.custom-ad-injected').forEach(el => el.remove());
 
-  banners.filter(b => b && b.active).forEach(b => {
-    const anchorFn = _CUSTOM_BANNER_ANCHORS[b.location];
-    const anchor   = anchorFn ? anchorFn() : null;
+  // Clear previous custom slot wraps cleanly
+  document.querySelectorAll('.custom-banners-slot').forEach(w => {
+    Array.from(w.querySelectorAll('.custom-banner')).forEach(c => c.remove());
+  });
+
+  // Group active banners by slot
+  const bySlot = {};
+  banners.filter(b => b && b.active !== false).forEach(b => {
+    const s = b.slot || b.location || 'top'; // support both field names
+    if (!bySlot[s]) bySlot[s] = [];
+    bySlot[s].push(b);
+  });
+
+  Object.entries(bySlot).forEach(([slot, slotBanners]) => {
+    const anchorFn = _CUSTOM_BANNER_ANCHORS[slot];
+    if (!anchorFn) return;
+    const anchor = anchorFn();
     if (!anchor) return;
 
-    const wrap = document.createElement('div');
-    wrap.className = 'ad-banner active custom-ad-injected';
-    wrap.style.cssText = 'max-width:1280px;margin:0 auto;padding:0 2rem 16px';
-
-    const inner = document.createElement('div');
-    inner.className = 'ad-banner-inner';
-    if (b.height && b.height !== 'auto') inner.style.minHeight = b.height;
-
-    if (b.videoUrl) {
-      inner.innerHTML = `<video src="${b.videoUrl}" autoplay muted loop playsinline
-        style="width:100%;max-height:250px;object-fit:cover;border-radius:inherit"></video>`;
-    } else if (b.imageUrl) {
-      inner.innerHTML = `<img src="${b.imageUrl}" alt=""
-        style="width:100%;max-height:250px;object-fit:cover">`;
-    } else if (b.html) {
-      inner.innerHTML = b.html;
-    } else if (b.text) {
-      inner.innerHTML = `<div class="ad-banner-text">${b.text}</div>`;
+    // Ensure wrapper div exists once per slot
+    const wrapId = 'custom-banner-wrap-' + slot;
+    let wrap = document.getElementById(wrapId);
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.id = wrapId;
+      wrap.className = 'ad-banner custom-banners-slot';
+      wrap.style.cssText = 'max-width:1280px;margin:16px auto;padding:0 2rem';
+      const mode = slotBanners[0]?.stackMode || 'below';
+      if (mode === 'beside') {
+        wrap.style.display = 'flex';
+        wrap.style.flexWrap = 'wrap';
+        wrap.style.gap = '12px';
+      }
+      // Insert after anchor (for ad-* elements), before footer
+      if (anchor.tagName === 'FOOTER') {
+        anchor.parentNode.insertBefore(wrap, anchor);
+      } else {
+        anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
+      }
     }
 
-    if (b.linkUrl) {
-      inner.style.cursor = 'pointer';
-      inner.onclick = () => window.open(b.linkUrl, '_blank', 'noopener');
-    }
+    // Build and append each banner
+    slotBanners.forEach(b => {
+      const el = document.createElement('div');
+      el.className = 'ad-banner-inner custom-banner';
+      Object.assign(el.style, {
+        borderRadius: '14px', overflow: 'hidden',
+        border: '1px solid var(--border-dim)',
+        background: 'var(--dark-3)', minHeight: '80px',
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'center', position: 'relative',
+        flex: '1 1 auto', marginBottom: '8px',
+      });
+      if (b.width)  el.style.maxWidth  = /%$/.test(String(b.width)) ? b.width : b.width + 'px';
+      if (b.height && !isNaN(b.height)) el.style.minHeight = b.height + 'px';
 
-    wrap.appendChild(inner);
-    if (b.position === 'before') {
-      anchor.parentNode.insertBefore(wrap, anchor);
-    } else {
-      anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
-    }
+      if (b.videoUrl) {
+        el.innerHTML = `<video src="${b.videoUrl}" autoplay muted loop playsinline style="width:100%;max-height:250px;object-fit:cover"></video>`;
+      } else if (b.imageUrl) {
+        el.innerHTML = `<img src="${b.imageUrl}" alt="" style="width:100%;max-height:250px;object-fit:cover">`;
+      } else if (b.html) {
+        el.innerHTML = b.html;
+      } else if (b.text) {
+        el.innerHTML = `<div style="padding:16px;text-align:center;font-size:14px;color:var(--text)">${b.text}</div>`;
+      }
+      if (b.linkUrl) {
+        el.style.cursor = 'pointer';
+        el.onclick = () => window.open(b.linkUrl, '_blank', 'noopener');
+      }
+      wrap.appendChild(el);
+    });
   });
 }

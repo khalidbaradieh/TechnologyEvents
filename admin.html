@@ -166,38 +166,55 @@
 
         <!-- ══ PAGE: OVERVIEW ══ -->
         <div id="page-overview" class="page active">
+          <!-- Fix 5: Real data stat boxes — filled by loadAnalytics() -->
           <div class="stats-row">
             <div class="stat-box">
               <div class="stat-row">
                 <div class="stat-ico" style="background:rgba(201,168,76,0.1)">📰</div>
-                <span class="stat-trend trend-up">↑ ١٢%</span>
+                <span class="stat-trend trend-up">إجمالي</span>
               </div>
-              <div class="stat-val">٢٤٧</div>
+              <div class="stat-val" id="ov-stat-total">—</div>
               <div class="stat-lbl">إجمالي الأخبار</div>
             </div>
             <div class="stat-box">
               <div class="stat-row">
-                <div class="stat-ico" style="background:rgba(74,158,255,0.1)">👁</div>
-                <span class="stat-trend trend-up">↑ ٢٤%</span>
+                <div class="stat-ico" style="background:rgba(61,220,132,0.1)">🌐</div>
+                <span class="stat-trend trend-up">منشور</span>
               </div>
-              <div class="stat-val">٨٦ ألف</div>
-              <div class="stat-lbl">مشاهدات اليوم</div>
+              <div class="stat-val" id="ov-stat-published">—</div>
+              <div class="stat-lbl">أخبار منشورة</div>
             </div>
             <div class="stat-box">
               <div class="stat-row">
-                <div class="stat-ico" style="background:rgba(61,220,132,0.1)">👥</div>
-                <span class="stat-trend trend-up">↑ ٥%</span>
+                <div class="stat-ico" style="background:rgba(255,154,60,0.1)">📨</div>
+                <span class="stat-trend" style="color:var(--orange)">مراجعة</span>
               </div>
-              <div class="stat-val">٢.٣م</div>
-              <div class="stat-lbl">قراء مسجلون</div>
+              <div class="stat-val" id="ov-stat-pending">—</div>
+              <div class="stat-lbl">بانتظار المراجعة</div>
             </div>
             <div class="stat-box">
               <div class="stat-row">
-                <div class="stat-ico" style="background:rgba(255,82,82,0.1)">💬</div>
-                <span class="stat-trend trend-down">↓ ٣%</span>
+                <div class="stat-ico" style="background:rgba(64,200,240,0.1)">🗓</div>
+                <span class="stat-trend" style="color:#40C8F0">مجدول</span>
               </div>
-              <div class="stat-val">١٢٨</div>
-              <div class="stat-lbl">تعليقات اليوم</div>
+              <div class="stat-val" id="ov-stat-scheduled">—</div>
+              <div class="stat-lbl">مجدول للنشر</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-row">
+                <div class="stat-ico" style="background:rgba(74,158,255,0.1)">👥</div>
+                <span class="stat-trend trend-up">فريق</span>
+              </div>
+              <div class="stat-val" id="ov-stat-editors">—</div>
+              <div class="stat-lbl">المحررون</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-row">
+                <div class="stat-ico" style="background:rgba(160,120,255,0.1)">📝</div>
+                <span class="stat-trend" style="color:var(--purple)">مسودة</span>
+              </div>
+              <div class="stat-val" id="ov-stat-drafts">—</div>
+              <div class="stat-lbl">مسودات</div>
             </div>
           </div>
 
@@ -214,39 +231,11 @@
               <div class="card-head">
                 <div class="card-head-title">آخر الأنشطة</div>
               </div>
-              <div class="activity-item">
-                <div class="activity-dot" style="background:var(--green)"></div>
-                <div>
-                  <div class="activity-text"><strong>أحمد الرشيدي</strong> نشر خبراً جديداً في الذكاء الاصطناعي</div>
-                  <div class="activity-time">منذ ١٥ دقيقة</div>
-                </div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot" style="background:var(--gold)"></div>
-                <div>
-                  <div class="activity-text"><strong>سارة المنصوري</strong> عدّلت مقال الروبوتات</div>
-                  <div class="activity-time">منذ ٤٥ دقيقة</div>
-                </div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot" style="background:var(--accent)"></div>
-                <div>
-                  <div class="activity-text"><strong>خالد العتيبي</strong> أضاف خبراً عاجلاً</div>
-                  <div class="activity-time">منذ ساعتين</div>
-                </div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot" style="background:var(--red)"></div>
-                <div>
-                  <div class="activity-text"><strong>المدير العام</strong> حذف خبراً قديماً</div>
-                  <div class="activity-time">منذ ٣ ساعات</div>
-                </div>
-              </div>
-              <div class="activity-item">
-                <div class="activity-dot" style="background:var(--purple)"></div>
-                <div>
-                  <div class="activity-text"><strong>منى الزهراني</strong> انضمت كمحررة جديدة</div>
-                  <div class="activity-time">منذ يوم</div>
+              <!-- Fix 5: Dynamic activity list filled by loadAnalytics() -->
+              <div id="ov-activity-list" style="display:flex;flex-direction:column;gap:0">
+                <div class="activity-item">
+                  <div class="activity-dot" style="background:var(--text-dim)"></div>
+                  <div><div class="activity-text" style="color:var(--text-dim)">جاري التحميل...</div></div>
                 </div>
               </div>
             </div>

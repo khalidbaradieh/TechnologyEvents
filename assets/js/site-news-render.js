@@ -126,6 +126,12 @@ export function scrollTrending(dir) {
   if (s) s.scrollBy({ left: dir * 220, behavior: 'smooth' });
 }
 
+// Fix 7: Same pattern for related/suggested news scroller
+export function scrollSuggested(dir) {
+  const s = document.getElementById('suggested-scroll');
+  if (s) s.scrollBy({ left: dir * 220, behavior: 'smooth' });
+}
+
 // ── SHOW-MORE (main page) ─────────────────────────────────────────
 export function _updateShowMoreBtn() {
   const pub      = getNewsData().filter(n => n.status === 'منشور');

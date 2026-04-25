@@ -26,7 +26,7 @@ import { _fb } from '/assets/js/site-state.js';
 import { renderSite, renderAllNewsPage, renderTrending,
          openAllNewsPage, closeAllNewsPage,
          filterByCat, navFilter, clearCatFilter, liveSearch,
-         showMoreNews, _renderScrollDots,
+         showMoreNews, _renderScrollDots, scrollSuggested,
          _applyCatsStrip }                      from '/assets/js/site-news-render.js';
 import { openArticle, closeArticle, openById,
          openArticleFromEl, openArticleFromWide,
@@ -321,4 +321,5 @@ window._closeMobileNav      = _closeMobileNav;
 window._toggleMobileSearch  = _toggleMobileSearch;
 window._autoCollapseNav     = _autoCollapseNav;
 window._renderScrollDots    = _renderScrollDots;
+window.scrollSuggested      = scrollSuggested; // Fix 7: related news arrows
 window._applyAdBanner       = _applyAdBanner;

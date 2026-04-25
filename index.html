@@ -146,7 +146,14 @@
 
     <!-- RELATED NEWS (trending-style cards) -->
     <div id="article-suggested" style="margin-top:40px;padding-top:28px;border-top:1px solid var(--border-dim)">
-      <h3 style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:18px;display:flex;align-items:center;gap:8px"><span style="display:block;width:3px;height:20px;background:var(--gold);border-radius:2px"></span>أخبار ذات صلة</h3>
+      <!-- Fix 7: header row with arrows matching trending section style -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <h3 style="font-size:18px;font-weight:800;color:var(--text);margin:0;display:flex;align-items:center;gap:8px"><span style="display:block;width:3px;height:20px;background:var(--gold);border-radius:2px"></span>أخبار ذات صلة</h3>
+        <div class="suggested-nav-arrows" style="display:flex;gap:8px">
+          <button class="trending-nav-btn" onclick="scrollSuggested(-1)" title="السابق" aria-label="السابق">›</button>
+          <button class="trending-nav-btn" onclick="scrollSuggested(1)" title="التالي" aria-label="التالي">‹</button>
+        </div>
+      </div>
       <div class="trending-scroll" id="suggested-scroll" style="display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none"></div>
       <div class="scroll-dots" id="suggested-dots" data-target="suggested-scroll"></div>
     </div>
