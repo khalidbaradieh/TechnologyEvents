@@ -522,43 +522,42 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
             <div>
               <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px">📬 قائمة الاعتماد</div>
-              <div style="font-size:13px;color:var(--text-muted)">المقالات المقدمة للمراجعة والاعتماد — مرتبة حسب وقت التقديم</div>
+              <div style="font-size:13px;color:var(--text-muted)">إدارة مسار المراجعة والنشر لجميع المقالات</div>
             </div>
-            <div style="display:flex;gap:8px">
-              <select id="aq-filter-status" class="filter-select" onchange="renderApprovalQueue()" style="font-size:12px">
-                <option value="">كل الحالات</option>
-                <option value="مقدم">مقدم للمراجعة</option>
-                <option value="قيد المراجعة">قيد المراجعة</option>
-                <option value="يحتاج تعديل">يحتاج تعديل</option>
-                <option value="معتمد">معتمد</option>
-                <option value="مرفوض">مرفوض</option>
-              </select>
-              <button class="btn-secondary" onclick="renderApprovalQueue()" style="font-size:12px;padding:7px 14px">🔄 تحديث</button>
-            </div>
+            <button class="btn-secondary" onclick="renderApprovalQueue()" style="font-size:12px;padding:7px 14px">🔄 تحديث</button>
           </div>
 
           <!-- Stats row -->
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:24px">
-            <div class="stat-box" style="padding:14px;cursor:pointer" onclick="document.getElementById('aq-filter-status').value='مقدم';renderApprovalQueue()">
-              <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">📨 مقدم</div>
-              <div style="font-size:24px;font-weight:800;color:var(--orange)" id="aq-count-submitted">0</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px">
+            <div class="stat-box" style="padding:12px;cursor:pointer" onclick="aqSetTab('pending')">
+              <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">📨 بانتظار المراجعة</div>
+              <div style="font-size:22px;font-weight:800;color:var(--orange)" id="aq-count-submitted">0</div>
             </div>
-            <div class="stat-box" style="padding:14px;cursor:pointer" onclick="document.getElementById('aq-filter-status').value='قيد المراجعة';renderApprovalQueue()">
-              <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">🔍 قيد المراجعة</div>
-              <div style="font-size:24px;font-weight:800;color:var(--accent)" id="aq-count-reviewing">0</div>
-            </div>
-            <div class="stat-box" style="padding:14px;cursor:pointer" onclick="document.getElementById('aq-filter-status').value='يحتاج تعديل';renderApprovalQueue()">
-              <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">↩️ يحتاج تعديل</div>
-              <div style="font-size:24px;font-weight:800;color:var(--red)" id="aq-count-revision">0</div>
-            </div>
-            <div class="stat-box" style="padding:14px;cursor:pointer" onclick="document.getElementById('aq-filter-status').value='معتمد';renderApprovalQueue()">
+            <div class="stat-box" style="padding:12px;cursor:pointer" onclick="aqSetTab('approved')">
               <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">✅ معتمد</div>
-              <div style="font-size:24px;font-weight:800;color:var(--purple)" id="aq-count-approved">0</div>
+              <div style="font-size:22px;font-weight:800;color:var(--purple)" id="aq-count-approved">0</div>
             </div>
-            <div class="stat-box" style="padding:14px;cursor:pointer" onclick="document.getElementById('aq-filter-status').value='مرفوض';renderApprovalQueue()">
+            <div class="stat-box" style="padding:12px;cursor:pointer" onclick="aqSetTab('rejected')">
               <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">❌ مرفوض</div>
-              <div style="font-size:24px;font-weight:800;color:var(--red)" id="aq-count-rejected">0</div>
+              <div style="font-size:22px;font-weight:800;color:var(--red)" id="aq-count-rejected">0</div>
             </div>
+            <div class="stat-box" style="padding:12px;cursor:pointer" onclick="aqSetTab('archived')">
+              <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">📦 مؤرشف</div>
+              <div style="font-size:22px;font-weight:800;color:var(--text-dim)" id="aq-count-archived">0</div>
+            </div>
+            <div class="stat-box" style="padding:12px;cursor:pointer" onclick="aqSetTab('log')">
+              <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">📋 سجل الأنشطة</div>
+              <div style="font-size:22px;font-weight:800;color:var(--gold)" id="aq-count-log">0</div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div id="aq-tabs" style="display:flex;gap:4px;border-bottom:2px solid var(--border-dim);margin-bottom:20px;overflow-x:auto">
+            <button id="aq-tab-pending"  onclick="aqSetTab('pending')"  class="aq-tab active" style="padding:8px 18px;font-size:13px;font-weight:700;background:none;border:none;border-bottom:3px solid var(--gold);color:var(--gold);cursor:pointer;white-space:nowrap;margin-bottom:-2px">📨 بانتظار المراجعة</button>
+            <button id="aq-tab-approved" onclick="aqSetTab('approved')" class="aq-tab" style="padding:8px 18px;font-size:13px;font-weight:700;background:none;border:none;border-bottom:3px solid transparent;color:var(--text-dim);cursor:pointer;white-space:nowrap;margin-bottom:-2px">✅ معتمد</button>
+            <button id="aq-tab-rejected" onclick="aqSetTab('rejected')" class="aq-tab" style="padding:8px 18px;font-size:13px;font-weight:700;background:none;border:none;border-bottom:3px solid transparent;color:var(--text-dim);cursor:pointer;white-space:nowrap;margin-bottom:-2px">❌ مرفوض</button>
+            <button id="aq-tab-archived" onclick="aqSetTab('archived')" class="aq-tab" style="padding:8px 18px;font-size:13px;font-weight:700;background:none;border:none;border-bottom:3px solid transparent;color:var(--text-dim);cursor:pointer;white-space:nowrap;margin-bottom:-2px">📦 مؤرشف</button>
+            <button id="aq-tab-log"      onclick="aqSetTab('log')"      class="aq-tab" style="padding:8px 18px;font-size:13px;font-weight:700;background:none;border:none;border-bottom:3px solid transparent;color:var(--text-dim);cursor:pointer;white-space:nowrap;margin-bottom:-2px">📋 سجل الأنشطة</button>
           </div>
 
           <!-- Queue list -->
@@ -567,8 +566,19 @@
           <!-- Empty state -->
           <div id="approval-queue-empty" style="display:none;text-align:center;padding:60px 20px">
             <div style="font-size:48px;margin-bottom:16px">📭</div>
-            <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px">لا توجد مقالات بانتظار المراجعة</div>
+            <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px" id="aq-empty-msg">لا توجد مقالات</div>
             <div style="font-size:13px;color:var(--text-muted)">ستظهر هنا المقالات المقدمة من الكتّاب فور تقديمها</div>
+          </div>
+
+          <!-- Article History Modal -->
+          <div id="aq-history-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;align-items:center;justify-content:center;padding:20px">
+            <div style="background:var(--dark-2);border:1px solid var(--border-dim);border-radius:16px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-dim)">
+                <div style="font-size:15px;font-weight:800;color:var(--text)">📋 سجل المقال</div>
+                <button onclick="document.getElementById('aq-history-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-dim)">✕</button>
+              </div>
+              <div id="aq-history-content" style="padding:20px;display:flex;flex-direction:column;gap:10px"></div>
+            </div>
           </div>
 
         </div><!-- /page-approval-queue -->

@@ -880,13 +880,37 @@ function renderNewsTable(data) {
   const tbody = document.getElementById('news-tbody');
   const emptyState = document.getElementById('news-empty-state');
 
-  // ── Ownership scoping: writers only see own articles ────────
-  const session = _loadRbacSession();
-  const canSeeAll = !session || _hasPerm('edit_any_article') || _hasPerm('view_analytics');
+  // ── Fix 4: مسودة only visible to its own author ─────────────
+  // ── Fix 1: queue statuses (مقدم / قيد المراجعة / يحتاج تعديل)
+  //           only visible in إدارة الأخبار if published, scheduled, or draft-own
+  const session      = _loadRbacSession();
+  const canSeeAll    = !session || _hasPerm('edit_any_article') || _hasPerm('view_analytics');
+  const canSeeQueue  = _hasPerm('review_articles') || _hasPerm('approve_articles');
+  // Statuses that belong ONLY in قائمة الاعتماد, not إدارة الأخبار
+  const QUEUE_ONLY   = new Set(['مقدم','قيد المراجعة','يحتاج تعديل','معتمد','مرفوض','مؤرشف']);
+  // Statuses visible in إدارة الأخبار to everyone with access
+  const TABLE_VISIBLE = new Set(['منشور','مجدول','مسودة','مجدول - تم النشر']);
+
+  const myName = _curUser ? _curUser.name : (session ? session.name : '');
+  const myUser = _curUser ? _curUser.username : (session ? session.username : '');
+
+  data = data.filter(n => {
+    // Fix 1: queue-only statuses → never in إدارة الأخبار
+    if (QUEUE_ONLY.has(n.status)) return false;
+    // Fix 4: مسودة → only own author sees it
+    if (n.status === 'مسودة') {
+      if (canSeeAll) return true;
+      return (n.author === myName || n.createdBy === myUser);
+    }
+    // منشور / مجدول / مجدول - تم النشر → all with access
+    return true;
+  });
+
+  // Additional ownership filter for non-managers (keeps only own articles)
   if (!canSeeAll && _curUser) {
     data = data.filter(n =>
-      n.author === _curUser.name ||
-      n.createdBy === (_curUser.username || _curUser.name)
+      n.author === myName ||
+      n.createdBy === myUser
     );
   }
 
@@ -1111,61 +1135,156 @@ function _updateApprovalBadge() {
 }
 
 // ── Render the approval queue page ────────────────────────────
+// ─── APPROVAL QUEUE — current active tab ─────────────────────
+let _aqActiveTab = 'pending';
+
+function aqSetTab(tab) {
+  _aqActiveTab = tab;
+  // Update tab button styles
+  ['pending','approved','rejected','archived','log'].forEach(t => {
+    const btn = document.getElementById('aq-tab-' + t);
+    if (!btn) return;
+    if (t === tab) {
+      btn.style.borderBottomColor = 'var(--gold)';
+      btn.style.color = 'var(--gold)';
+    } else {
+      btn.style.borderBottomColor = 'transparent';
+      btn.style.color = 'var(--text-dim)';
+    }
+  });
+  renderApprovalQueue();
+}
+window.aqSetTab = aqSetTab;
+
 function renderApprovalQueue() {
   if (!_hasPerm('review_articles') && !_hasPerm('approve_articles')) return;
 
-  const filterStatus = document.getElementById('aq-filter-status')?.value || '';
-  // Determine what this user can see
-  const canSeeAll = _hasPerm('edit_any_article');
-  let queue = newsData.filter(n => {
-    // All workflow statuses except منشور and مسودة belong in queue
-    const inQueue = Object.keys(NEWS_WORKFLOW).filter(s => !['منشور','مسودة'].includes(s));
-    if (!inQueue.includes(n.status)) return false;
-    if (filterStatus && n.status !== filterStatus) return false;
-    // Supervisors only see articles from their team (simplified: own cats or all)
-    const allowedCats = _currentAllowedCats();
+  const canApprove  = _hasPerm('approve_articles');
+  const canReview   = _hasPerm('review_articles');
+  const canPublish  = _hasPerm('publish_articles');
+  const canViewLogs = _hasPerm('manage_users') || _hasPerm('view_analytics') || _hasPerm('view_audit_log');
+  const allowedCats = _currentAllowedCats();
+
+  // All queue articles (any status that's not مسودة/منشور/مجدول)
+  const QUEUE_ALL = ['مقدم','قيد المراجعة','يحتاج تعديل','معتمد','مرفوض','مؤرشف'];
+  const allQueue  = newsData.filter(n => {
+    if (!QUEUE_ALL.includes(n.status)) return false;
     if (allowedCats && !allowedCats.includes(n.cat)) return false;
     return true;
   });
 
-  // Sort: pending first, then by submission time (newest first)
-  queue.sort((a, b) => {
-    const priorityOrder = ['مقدم','قيد المراجعة','يحتاج تعديل','معتمد','مجدول','مرفوض','مؤرشف'];
-    const ai = priorityOrder.indexOf(a.status);
-    const bi = priorityOrder.indexOf(b.status);
-    if (ai !== bi) return ai - bi;
-    return (Number(b.id)||0) - (Number(a.id)||0);
+  // Update counters
+  const counts = { pending: 0, approved: 0, rejected: 0, archived: 0, log: 0 };
+  allQueue.forEach(n => {
+    if (['مقدم','قيد المراجعة','يحتاج تعديل'].includes(n.status)) counts.pending++;
+    else if (n.status === 'معتمد')  counts.approved++;
+    else if (n.status === 'مرفوض') counts.rejected++;
+    else if (n.status === 'مؤرشف') counts.archived++;
   });
+  // Log count = total unique audit events across all queue articles
+  counts.log = allQueue.reduce((s, n) => s + (n.audit ? n.audit.length : 0), 0);
 
-  // Update stat counters
-  const counts = { 'مقدم':0, 'قيد المراجعة':0, 'يحتاج تعديل':0, 'معتمد':0, 'مرفوض':0 };
-  newsData.forEach(n => { if (counts[n.status] !== undefined) counts[n.status]++; });
   const setCount = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  setCount('aq-count-submitted',  counts['مقدم']);
-  setCount('aq-count-reviewing',  counts['قيد المراجعة']);
-  setCount('aq-count-revision',   counts['يحتاج تعديل']);
-  setCount('aq-count-approved',   counts['معتمد']);
-  setCount('aq-count-rejected',   counts['مرفوض']);
+  setCount('aq-count-submitted', counts.pending);
+  setCount('aq-count-approved',  counts.approved);
+  setCount('aq-count-rejected',  counts.rejected);
+  setCount('aq-count-archived',  counts.archived);
+  setCount('aq-count-log',       counts.log);
 
   const list  = document.getElementById('approval-queue-list');
   const empty = document.getElementById('approval-queue-empty');
+  const emptyMsg = document.getElementById('aq-empty-msg');
   if (!list) return;
+
+  // ── TAB: Activity Log ───────────────────────────────────────
+  if (_aqActiveTab === 'log') {
+    // Flatten all audit events, sort latest first
+    const events = [];
+    allQueue.forEach(n => {
+      (n.audit || []).forEach(ev => {
+        events.push({ ...ev, articleId: n.id, articleTitle: n.title, articleStatus: n.status });
+      });
+    });
+    events.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+
+    if (!events.length) {
+      list.innerHTML = '';
+      if (empty) { empty.style.display = 'block'; if (emptyMsg) emptyMsg.textContent = 'لا توجد أنشطة مسجلة بعد'; }
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+
+    const ACTION_LABELS = {
+      create: 'أنشأ المقال', edit: 'عدّل المقال', submit: 'قدّم للمراجعة',
+      approve: 'اعتمد المقال', reject: 'رفض المقال', publish: 'نشر المقال',
+      status: 'غيّر الحالة', archive: 'أرشف المقال',
+    };
+    const ACTION_COLORS = {
+      create:'var(--text-dim)', edit:'var(--accent)', submit:'var(--orange)',
+      approve:'var(--purple)', reject:'var(--red)', publish:'var(--green)',
+      status:'var(--gold)', archive:'var(--text-dim)',
+    };
+
+    list.innerHTML = events.map(ev => {
+      const label  = ACTION_LABELS[ev.action] || ev.action;
+      const color  = ACTION_COLORS[ev.action] || 'var(--text-dim)';
+      const dt     = new Date(ev.ts);
+      const dtStr  = isNaN(dt) ? ev.ts : dt.toLocaleString('ar-EG', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+      return `<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:var(--dark-3);border-radius:10px;border:1px solid var(--border-dim)">
+        <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;margin-top:6px"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:var(--text);margin-bottom:2px">
+            <strong>${ev.who || '—'}</strong> <span style="color:${color}">${label}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${ev.articleTitle}">${ev.articleTitle}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-dim);flex-shrink:0;text-align:left">${dtStr}</div>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  // ── TABS: Pending / Approved / Rejected / Archived ──────────
+  const tabFilter = {
+    pending:  n => ['مقدم','قيد المراجعة','يحتاج تعديل'].includes(n.status),
+    approved: n => n.status === 'معتمد',
+    rejected: n => n.status === 'مرفوض',
+    archived: n => n.status === 'مؤرشف',
+  };
+  const emptyLabels = {
+    pending:  'لا توجد مقالات بانتظار المراجعة',
+    approved: 'لا توجد مقالات معتمدة حالياً',
+    rejected: 'لا توجد مقالات مرفوضة',
+    archived: 'لا توجد مقالات مؤرشفة',
+  };
+
+  let queue = allQueue.filter(tabFilter[_aqActiveTab] || (() => true));
+
+  // Sort: pending by priority order + newest first; others by newest first
+  if (_aqActiveTab === 'pending') {
+    const priorityOrder = ['مقدم','قيد المراجعة','يحتاج تعديل'];
+    queue.sort((a, b) => {
+      const ai = priorityOrder.indexOf(a.status);
+      const bi = priorityOrder.indexOf(b.status);
+      if (ai !== bi) return ai - bi;
+      return (Number(b.id)||0) - (Number(a.id)||0);
+    });
+  } else {
+    queue.sort((a, b) => (Number(b.id)||0) - (Number(a.id)||0));
+  }
 
   if (!queue.length) {
     list.innerHTML = '';
-    if (empty) empty.style.display = 'block';
+    if (empty) { empty.style.display = 'block'; if (emptyMsg) emptyMsg.textContent = emptyLabels[_aqActiveTab] || 'لا توجد مقالات'; }
     return;
   }
   if (empty) empty.style.display = 'none';
 
   list.innerHTML = queue.map(n => {
     const wf = NEWS_WORKFLOW[n.status] || {};
-    const canApprove = _hasPerm('approve_articles');
-    const canReview  = _hasPerm('review_articles');
-    const canPublish = _hasPerm('publish_articles');
     const canEditThis = _canEditArticle(n);
 
-    // Time waiting calculation
+    // Time since submission
     const submittedAt = n.submittedAt || n.createdAt || '';
     let timeWaiting = '';
     if (submittedAt) {
@@ -1175,9 +1294,9 @@ function renderApprovalQueue() {
         : `منذ ${Math.floor(mins/1440)} يوم`;
     }
 
-    // Action buttons based on status + role
+    // Action buttons by tab
     let actionBtns = '';
-    if (['مقدم','قيد المراجعة'].includes(n.status)) {
+    if (_aqActiveTab === 'pending') {
       if (n.status === 'مقدم' && canReview) {
         actionBtns += `<button class="btn-view" onclick="quickSetStatus(${n.id},'قيد المراجعة')" style="font-size:12px;padding:6px 12px;color:var(--accent);border-color:rgba(74,158,255,0.3)">🔍 بدء المراجعة</button>`;
       }
@@ -1185,23 +1304,28 @@ function renderApprovalQueue() {
         actionBtns += `<button class="btn-approve" onclick="quickSetStatus(${n.id},'معتمد')" style="font-size:12px;padding:6px 12px">✅ اعتماد</button>`;
       }
       if (canReview) {
-        actionBtns += `<button class="btn-secondary" onclick="quickSetStatus(${n.id},'يحتاج تعديل')" style="font-size:12px;padding:6px 12px;color:var(--orange);border-color:rgba(255,154,60,0.3)">↩️ إرجاع للتعديل</button>`;
+        actionBtns += `<button class="btn-secondary" onclick="quickSetStatus(${n.id},'يحتاج تعديل')" style="font-size:12px;padding:6px 12px;color:var(--orange);border-color:rgba(255,154,60,0.3)">↩️ إرجاع</button>`;
         actionBtns += `<button class="btn-del" onclick="quickSetStatus(${n.id},'مرفوض')" style="font-size:12px;padding:6px 12px">❌ رفض</button>`;
       }
     }
-    if (n.status === 'معتمد' && canPublish) {
+    if (_aqActiveTab === 'approved' && canPublish) {
       actionBtns += `<button class="btn-approve" onclick="quickSetStatus(${n.id},'منشور')" style="font-size:12px;padding:6px 12px;background:rgba(61,220,132,0.15);color:var(--green);border-color:rgba(61,220,132,0.3)">🌐 نشر</button>`;
     }
     if (canEditThis) {
-      actionBtns += `<button class="btn-edit" onclick="editNews(${n.id})" style="font-size:12px;padding:6px 12px">✏️ تعديل</button>`;
+      actionBtns += `<button class="btn-edit" onclick="editNews(${n.id})" style="font-size:12px;padding:6px 12px">✏️</button>`;
     }
 
-    // Review note display
+    // Fix 3: History (ⓘ) button — visible to managers/admins
+    const historyBtn = canViewLogs
+      ? `<button onclick="showArticleHistory(${n.id})" title="سجل المقال" style="background:none;border:1px solid var(--border-dim);border-radius:6px;padding:5px 9px;cursor:pointer;font-size:14px;color:var(--text-dim)">ⓘ</button>`
+      : '';
+
+    // Review note
     const reviewNoteHtml = n.reviewNote
       ? `<div style="background:rgba(255,154,60,0.08);border:1px solid rgba(255,154,60,0.2);border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12px;color:var(--orange)">💬 ملاحظة المراجع: ${n.reviewNote}</div>`
       : '';
 
-    // Audit trail mini-view
+    // Last audit stamp
     const lastAudit = n.audit && n.audit[0]
       ? `<span style="font-size:11px;color:var(--text-dim)">${n.audit[0].who} · ${new Date(n.audit[0].ts).toLocaleString('ar-EG',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`
       : '';
@@ -1222,7 +1346,8 @@ function renderApprovalQueue() {
           </div>
           ${reviewNoteHtml}
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;align-items:center">
+          ${historyBtn}
           ${actionBtns}
         </div>
       </div>
@@ -1230,6 +1355,51 @@ function renderApprovalQueue() {
   }).join('');
 }
 window.renderApprovalQueue = renderApprovalQueue;
+
+// Fix 3: Show full article history in modal
+function showArticleHistory(id) {
+  const n = newsData.find(x => x.id === id);
+  if (!n) return;
+  const modal   = document.getElementById('aq-history-modal');
+  const content = document.getElementById('aq-history-content');
+  if (!modal || !content) return;
+
+  const ACTION_LABELS = {
+    create: 'إنشاء المقال', edit: 'تعديل', submit: 'تقديم للمراجعة',
+    approve: 'اعتماد', reject: 'رفض', publish: 'نشر',
+    status: 'تغيير الحالة', archive: 'أرشفة',
+  };
+  const ACTION_COLORS = {
+    create:'var(--text-dim)', edit:'var(--accent)', submit:'var(--orange)',
+    approve:'var(--purple)', reject:'var(--red)', publish:'var(--green)',
+    status:'var(--gold)', archive:'var(--text-dim)',
+  };
+
+  const audit = n.audit && n.audit.length ? [...n.audit] : [];
+  // Sort latest first
+  audit.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+
+  content.innerHTML = `
+    <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">${n.title}</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">✍️ ${n.author} · 📂 ${n.cat}</div>
+    ${audit.length ? audit.map(ev => {
+      const label = ACTION_LABELS[ev.action] || ev.action;
+      const color = ACTION_COLORS[ev.action] || 'var(--text-dim)';
+      const dt    = new Date(ev.ts);
+      const dtStr = isNaN(dt) ? (ev.ts||'') : dt.toLocaleString('ar-EG', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' });
+      return `<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border-dim)">
+        <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;margin-top:6px"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--text)"><strong>${ev.who||'—'}</strong> <span style="color:${color}">${label}</span></div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:2px">${dtStr}</div>
+        </div>
+      </div>`;
+    }).join('') : '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:24px">لا توجد سجلات لهذا المقال بعد</div>'}
+  `;
+
+  modal.style.display = 'flex';
+}
+window.showArticleHistory = showArticleHistory;
 
 function resetNewsForm() {
   ['n-title','n-excerpt','n-content','n-thumbnail','n-photo-url'].forEach(id => {
