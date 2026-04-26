@@ -540,7 +540,26 @@
             </div>
           </div>
 
-          <!-- Sections list — rendered by admin-sections.js -->
+          <!-- Built-in sections (الأقسام المدمجة) -->
+          <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+            <span style="display:block;width:4px;height:18px;background:var(--gold);border-radius:2px"></span>
+            الأقسام المدمجة
+            <span style="font-size:11px;font-weight:400;color:var(--text-dim);margin-right:4px">— أقسام الموقع الأساسية غير القابلة للحذف</span>
+          </div>
+          <div id="builtin-sections-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px"></div>
+
+          <!-- Divider -->
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+            <div style="flex:1;height:1px;background:var(--border-dim)"></div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;white-space:nowrap">
+              <span style="display:block;width:4px;height:18px;background:var(--accent);border-radius:2px"></span>
+              الأقسام المخصصة
+              <span style="font-size:11px;font-weight:400;color:var(--text-dim)">— أقسام تنشئها أنت</span>
+            </div>
+            <div style="flex:1;height:1px;background:var(--border-dim)"></div>
+          </div>
+
+          <!-- Custom sections list — rendered by admin-sections.js -->
           <div id="custom-sections-list"></div>
         </div><!-- /page-custom-sections -->
 

@@ -9,6 +9,7 @@ import {
   initAdminSections, addSection, updateSection, deleteSection,
   toggleSectionActive, getSectionsCache,
   getCheckedCustomSections, setCustomSectionCheckboxes, resetCustomSectionCheckboxes,
+  renderBuiltInSections,
 } from '/assets/js/admin-sections.js';
 import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, updateDoc, onSnapshot, query, orderBy }
@@ -801,6 +802,8 @@ function initDashboard() {
   // Fix 5: populate overview with real data after Firebase loads
   setTimeout(loadAnalytics, 800);
   setTimeout(buildChart, 850);
+  // Fix 2: init custom sections so Add News form checkboxes are always ready
+  setTimeout(initAdminSections, 500);
   // Show analytics as first page after login
   const analyticsNav = document.querySelector('.nav-item[data-page="analytics"]');
   if (analyticsNav && typeof showPage === 'function') showPage('analytics', analyticsNav);
@@ -862,7 +865,7 @@ function showPage(id, el) {
   if (id === 'footer-control') { renderFooterColEditor('company'); renderFooterColEditor('more'); renderSocialMedia(); loadPageControls(); }
   if (id === 'ads-manager') { renderAdsManager(); loadLayoutSettings(); }
   if (id === 'nav-links-manager') renderNavMenuEditor();
-  if (id === 'custom-sections') { if (typeof initAdminSections === 'function') initAdminSections(); }
+  if (id === 'custom-sections') { if (typeof renderBuiltInSections === 'function') renderBuiltInSections(); if (typeof initAdminSections === 'function') initAdminSections(); }
   if (id === 'general-settings') { loadInteractionToggles(); loadCommentsControl(); }
   if (id === 'identity') { loadIdentitySettings(); loadLayoutSettings(); loadMaintenance(); }
   if (id === 'inbox') { loadInboxMessages(); loadInboxForwarding(); }

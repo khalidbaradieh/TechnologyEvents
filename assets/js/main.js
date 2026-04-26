@@ -60,9 +60,7 @@ function _scheduleRender() {
   clearTimeout(_renderTimer);
   _renderTimer = setTimeout(() => {
     renderSite();
-    // Re-render custom sections with updated news data
-    const cs = _fb.site && _fb.site.custom_sections;
-    if (cs) setTimeout(() => renderCustomSections(cs), 50);
+    // Custom sections are re-rendered by their own onSnapshot listener
   }, 16);
 }
 
@@ -116,6 +114,13 @@ function startFirebaseListeners() {
     try { localStorage.setItem('atq_cache_breaking', JSON.stringify(_fb.breaking)); } catch (_) { /* silent */ }
     checkBreaking();
   }, err => console.warn('[FB] breaking:', err));
+
+  // ── CUSTOM SECTIONS (اقسام الاخبار) ─────────────────────────────
+  // Stored in settings/custom_sections — separate from site settings doc.
+  onSnapshot(doc(db, DB.SETTINGS, 'custom_sections'), snap => {
+    const items = snap.exists() ? (snap.data().items || []) : [];
+    renderCustomSections(items);
+  }, err => console.warn('[FB] custom_sections:', err));
 
   // ── SITE SETTINGS ───────────────────────────────────────────────
   onSnapshot(doc(db, DB.SETTINGS, DB.S.SITE), snap => {
@@ -203,8 +208,7 @@ function startFirebaseListeners() {
     if (s.ad_allnews) { window._adAllnewsData = s.ad_allnews; _applyAdBanner('allnews', s.ad_allnews); }
     if (s.ad_article) window._adArticleData = s.ad_article;
     if (s.custom_banners) _applyCustomBanners(s.custom_banners);
-    // Custom news sections (اقسام الاخبار)
-    if (s.custom_sections) renderCustomSections(s.custom_sections);
+    // Note: custom_sections are handled by their own dedicated onSnapshot above
 
     // If an article is open, refresh its interaction buttons + related news
     if (document.getElementById('article-page')?.style.display === 'block') {
