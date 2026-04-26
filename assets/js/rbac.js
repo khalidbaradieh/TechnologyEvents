@@ -4,6 +4,15 @@
 // ================================================================
 
 import { FIREBASE_CONFIG, DB } from '/config.js';
+import {
+  PERMISSIONS,
+  DEFAULT_ROLES,
+  PERM_PAGE_MAP,
+  getEffectivePerms as _engineGetEffectivePerms,
+  canAccessRbacPanel,
+  canManageRoles,
+  canManageUser,
+} from '/assets/js/rbac-engine.js';
 import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, getDocs, query, orderBy, limit }
          from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -12,89 +21,10 @@ const _app = initializeApp(FIREBASE_CONFIG);
 const _db  = getFirestore(_app);
 
 // ─── CONSTANTS ────────────────────────────────────────────────
-const PERMISSIONS = [
-  // محتوى
-  { id:'add_articles',    label:'إضافة أخبار',              group:'محتوى',  icon:'➕' },
-  { id:'edit_articles',   label:'تعديل الأخبار',             group:'محتوى',  icon:'✏️' },
-  { id:'delete_articles', label:'حذف الأخبار',               group:'محتوى',  icon:'🗑' },
-  { id:'publish_articles',label:'نشر الأخبار',               group:'محتوى',  icon:'📤' },
-  { id:'approve_articles',label:'اعتماد مقالات الكتّاب',     group:'محتوى',  icon:'✅' },
-  { id:'import_articles', label:'استيراد الأخبار',           group:'محتوى',  icon:'📥' },
-  { id:'ai_generate',     label:'توليد بالذكاء الاصطناعي',   group:'محتوى',  icon:'🤖' },
-  // الموقع
-  { id:'manage_homepage', label:'الصفحة الرئيسية',           group:'الموقع', icon:'🏠' },
-  { id:'manage_cats',     label:'إدارة الأقسام',             group:'الموقع', icon:'📂' },
-  { id:'manage_breaking', label:'الأخبار العاجلة',           group:'الموقع', icon:'⚡' },
-  { id:'manage_ticker',   label:'شريط الأخبار',              group:'الموقع', icon:'🗞️' },
-  { id:'manage_ads',      label:'إدارة الإعلانات',           group:'الموقع', icon:'📣' },
-  { id:'manage_nav',      label:'قوائم التنقل',              group:'الموقع', icon:'🔗' },
-  { id:'manage_identity', label:'هوية الموقع',               group:'الموقع', icon:'🎨' },
-  // النظام
-  { id:'manage_users',    label:'إدارة المستخدمين',          group:'النظام', icon:'👥' },
-  { id:'view_analytics',  label:'التحليلات والإحصاءات',      group:'النظام', icon:'📊' },
-  { id:'view_reports',    label:'التقارير',                  group:'النظام', icon:'📈' },
-  { id:'system_settings', label:'إعدادات النظام',            group:'النظام', icon:'⚙️' },
-  { id:'manage_emails',   label:'إدارة المشتركين',           group:'النظام', icon:'📧' },
-  { id:'manage_inbox',    label:'صندوق الرسائل',             group:'النظام', icon:'✉️' },
-];
+// PERMISSIONS, DEFAULT_ROLES, and PERM_PAGE_MAP are imported from
+// /assets/js/rbac-engine.js — do not redefine them here.
 
-const DEFAULT_ROLES = [
-  {
-    id:'manager', name:'المدير العام', icon:'👑', color:'#C9A84C',
-    level:100, protected:true,
-    desc:'صلاحيات كاملة وغير محدودة على جميع أجزاء النظام',
-    perms:['*'],
-  },
-  {
-    id:'admin', name:'مدير', icon:'🛡️', color:'#4A9EFF',
-    level:80, protected:false,
-    desc:'إدارة المحتوى والمستخدمين مع قيود محدودة على إعدادات النظام',
-    perms:['add_articles','edit_articles','delete_articles','publish_articles',
-           'approve_articles','import_articles','ai_generate',
-           'manage_homepage','manage_cats','manage_breaking','manage_ticker',
-           'manage_ads','manage_nav','manage_identity',
-           'view_analytics','view_reports','manage_emails','manage_inbox'],
-  },
-  {
-    id:'editor', name:'محرر', icon:'✏️', color:'#A078FF',
-    level:60, protected:false,
-    desc:'إضافة وتعديل ونشر الأخبار واعتماد مقالات الكتّاب',
-    perms:['add_articles','edit_articles','publish_articles','approve_articles',
-           'ai_generate','manage_homepage','manage_breaking','manage_ticker','view_analytics'],
-  },
-  {
-    id:'writer', name:'كاتب', icon:'📝', color:'#3DDC84',
-    level:40, protected:false,
-    desc:'كتابة مقالات وتقديمها للمراجعة — بدون صلاحية النشر المباشر',
-    perms:['add_articles','edit_articles'],
-  },
-];
-
-// Map RBAC permissions → admin.html page IDs
-const PERM_TO_PAGES = {
-  add_articles:    ['news'],
-  edit_articles:   ['news'],
-  delete_articles: ['news'],
-  publish_articles:['news'],
-  approve_articles:['news'],
-  import_articles: ['import'],
-  ai_generate:     ['ai-generator'],
-  manage_homepage: ['pagecontrols','general-settings'],
-  manage_cats:     ['categories'],
-  manage_breaking: ['breaking'],
-  manage_ticker:   ['latest'],
-  manage_ads:      ['ads-manager'],
-  manage_nav:      ['nav-links-manager'],
-  manage_identity: ['identity'],
-  manage_users:    ['editors'],
-  view_analytics:  ['analytics'],
-  view_reports:    ['analytics'],
-  system_settings: ['settings'],
-  manage_emails:   ['subscribers'],
-  manage_inbox:    ['inbox'],
-};
-
-// ─── STATE ────────────────────────────────────────────────────
+// rbacRoles starts with engine defaults; overwritten by Firestore on load.
 let rbacRoles  = [...DEFAULT_ROLES];
 let users      = [];
 let activityLog = [];
@@ -113,9 +43,8 @@ function checkAuth() {
     if (!u || !u.roleId) return false;
     const role = rbacRoles.find(r => r.id === u.roleId);
     if (!role) return false;
-    const perms = getEffectivePerms(u);
-    // Must have manage_users OR be manager
-    if (u.roleId === 'manager' || perms.includes('manage_users') || perms.includes('*')) {
+    // Use engine function: accepts manage_users, manage_roles, or wildcard
+    if (canAccessRbacPanel(u, rbacRoles)) {
       curUser = u;
       return true;
     }
@@ -124,12 +53,8 @@ function checkAuth() {
 }
 
 function getEffectivePerms(user) {
-  if (!user) return [];
-  if (user.customPerms && Array.isArray(user.customPerms)) return user.customPerms;
-  const role = rbacRoles.find(r => r.id === user.roleId);
-  if (!role) return [];
-  if (role.perms.includes('*')) return ['*'];
-  return role.perms || [];
+  // Delegates to rbac-engine.js for consistent addPerms/denyPerms/customPerms logic
+  return _engineGetEffectivePerms(user, rbacRoles);
 }
 
 function hasPerm(permId, user) {
@@ -303,8 +228,8 @@ function renderRoles() {
 
   // Roles tab
   const sorted = [...rbacRoles].sort((a,b) => b.level - a.level);
-  const isManager = curUser?.roleId === 'manager';
-  if (isManager) document.getElementById('add-role-btn').style.display = '';
+  const canEdit = canManageRoles(curUser, rbacRoles);
+  if (canEdit) document.getElementById('add-role-btn').style.display = '';
 
   document.getElementById('roles-container').innerHTML = sorted.map(r => {
     const count = users.filter(u => u.roleId === r.id).length;
@@ -322,7 +247,7 @@ function renderRoles() {
         <div class="role-stat"><strong>${permCount}</strong> صلاحية</div>
         <div class="role-stat"><strong>${r.level}</strong> مستوى</div>
       </div>
-      ${isManager && !r.protected ? `<button class="btn-icon" onclick="editRole('${r.id}')" style="margin-right:8px">✏️</button>` : ''}
+      ${canEdit && !r.protected ? `<button class="btn-icon" onclick="editRole('${r.id}')" style="margin-right:8px">✏️</button>` : ''}
     </div>`;
   }).join('');
 }
@@ -331,9 +256,9 @@ function renderMatrix() {
   const roles  = [...rbacRoles].sort((a,b) => b.level - a.level);
   const groups = [...new Set(PERMISSIONS.map(p => p.group))];
   const draft  = matrixDraft || {};
-  const isManager = curUser?.roleId === 'manager';
+  const canEditMatrix = curUser ? (curUser.roleId === 'manager' || hasPerm('manage_roles')) : false;
 
-  if (isManager) {
+  if (canEditMatrix) {
     document.getElementById('matrix-edit-btn').style.display = '';
     document.getElementById('matrix-edit-hint').textContent = matrixEditing ? 'وضع التعديل نشط — انقر على ✅/❌ لتغيير الصلاحية' : '';
   }
@@ -400,7 +325,7 @@ function openUserModal(userId) {
   updateAvatarPreview();
   buildRoleSelector();
   buildCatsList([]);
-  buildPermsList([], false);
+  buildPermsList([], false, [], []);
   document.getElementById('user-modal').classList.add('open');
 }
 window.openUserModal = openUserModal;
@@ -420,7 +345,7 @@ function editUser(id) {
   buildCatsList(u.allowedCats || []);
   const hasCustom = Array.isArray(u.customPerms);
   document.getElementById('u-use-custom-perms').checked = hasCustom;
-  buildPermsList(u.customPerms || [], hasCustom);
+  buildPermsList(u.customPerms || [], hasCustom, u.addPerms || [], u.denyPerms || []);
   document.getElementById('user-modal').classList.add('open');
 }
 window.editUser = editUser;
@@ -468,10 +393,16 @@ function buildCatsList(selected) {
     </label>`).join('') || '<span style="font-size:11px;color:var(--text-dim)">لا توجد أقسام</span>';
 }
 
-function buildPermsList(selected, enabled) {
-  const set   = new Set(selected);
-  const grps  = [...new Set(PERMISSIONS.map(p => p.group))];
+function buildPermsList(selected, enabled, addSelected, denySelected) {
+  addSelected  = addSelected  || [];
+  denySelected = denySelected || [];
+  const set     = new Set(selected);
+  const addSet  = new Set(addSelected);
+  const denySet = new Set(denySelected);
+  const grps    = [...new Set(PERMISSIONS.map(p => p.group))];
   let html = '';
+
+  // ── Override permissions (legacy) ────────────────────────────
   grps.forEach(g => {
     html += `<div class="section-label" style="grid-column:1/-1">${g}</div>`;
     PERMISSIONS.filter(p => p.group === g).forEach(p => {
@@ -482,8 +413,40 @@ function buildPermsList(selected, enabled) {
     });
   });
   document.getElementById('u-perms-list').innerHTML = html;
-  document.getElementById('perm-select-btns') &&
-    (document.getElementById('perm-select-btns').style.display = enabled ? 'flex' : 'none');
+  const btns = document.getElementById('perm-select-btns');
+  if (btns) btns.style.display = enabled ? 'flex' : 'none';
+
+  // ── addPerms panel ────────────────────────────────────────────
+  const addEl = document.getElementById('u-add-perms-list');
+  if (addEl) {
+    let addHtml = '';
+    grps.forEach(g => {
+      addHtml += `<div class="section-label" style="grid-column:1/-1;font-size:11px;color:var(--green)">${g}</div>`;
+      PERMISSIONS.filter(p => p.group === g).forEach(p => {
+        addHtml += `<label class="check-row">
+          <input type="checkbox" class="perm-add-cb" value="${p.id}" ${addSet.has(p.id) ? 'checked' : ''} style="accent-color:var(--green)">
+          <span style="font-size:12px">${p.icon} ${p.label}</span>
+        </label>`;
+      });
+    });
+    addEl.innerHTML = addHtml;
+  }
+
+  // ── denyPerms panel ───────────────────────────────────────────
+  const denyEl = document.getElementById('u-deny-perms-list');
+  if (denyEl) {
+    let denyHtml = '';
+    grps.forEach(g => {
+      denyHtml += `<div class="section-label" style="grid-column:1/-1;font-size:11px;color:var(--red)">${g}</div>`;
+      PERMISSIONS.filter(p => p.group === g).forEach(p => {
+        denyHtml += `<label class="check-row">
+          <input type="checkbox" class="perm-deny-cb" value="${p.id}" ${denySet.has(p.id) ? 'checked' : ''} style="accent-color:var(--red)">
+          <span style="font-size:12px">${p.icon} ${p.label}</span>
+        </label>`;
+      });
+    });
+    denyEl.innerHTML = denyHtml;
+  }
 }
 
 window.togglePermOverride = function() {
@@ -534,6 +497,10 @@ async function saveUser() {
     ? Array.from(document.querySelectorAll('.perm-custom-cb:checked')).map(c => c.value)
     : null;
 
+  // New: addPerms and denyPerms
+  const addPerms  = Array.from(document.querySelectorAll('.perm-add-cb:checked')).map(c => c.value);
+  const denyPerms = Array.from(document.querySelectorAll('.perm-deny-cb:checked')).map(c => c.value);
+
   const colors = ['#C9A84C','#4A9EFF','#A078FF','#3DDC84','#FF5252','#FF9A3C','#40C8F0'];
 
   if (eid) {
@@ -548,6 +515,8 @@ async function saveUser() {
         active,
         allowedCats,
         customPerms,
+        addPerms:  addPerms.length  ? addPerms  : null,
+        denyPerms: denyPerms.length ? denyPerms : null,
       };
       if (pass) users[idx].pass = pass;
       logActivity('edit', `تعديل بيانات العضو: ${name}`);
@@ -564,6 +533,8 @@ async function saveUser() {
       active,
       allowedCats,
       customPerms,
+      addPerms:  addPerms.length  ? addPerms  : null,
+      denyPerms: denyPerms.length ? denyPerms : null,
       articles:   0,
       color:      colors[Math.floor(Math.random() * colors.length)],
       createdAt:  new Date().toISOString(),
@@ -891,15 +862,22 @@ async function rbacStandaloneLogin() {
     if (u === 'admin') {
       const pw = JSON.parse(localStorage.getItem('atq_user_passwords') || '{}');
       if (p === (pw['admin'] || 'admin123')) {
-        matched = { id:'admin', username:'admin', name:'المدير العام', roleId:'manager', customPerms:null };
+        matched = { id:'admin', username:'admin', name:'المدير العام', roleId:'manager',
+                    customPerms:null, addPerms:null, denyPerms:null, allowedCats:null };
       }
     } else {
       const ed = edList.find(e => e.user === u);
       if (ed && ed.pass === p && ed.active !== false) {
-        const rid   = ed.roleId || 'editor';
-        const rObj  = roles.find(r => r.id === rid);
-        if (rObj && rObj.level >= 80) {
-          matched = { id: ed.id, username: u, name: ed.name, roleId: rid, customPerms: ed.customPerms || null };
+        const rid  = ed.roleId || 'editor';
+        const rObj = roles.find(r => r.id === rid);
+        const sess = { id: ed.id, username: u, name: ed.name, roleId: rid,
+                       customPerms: ed.customPerms || null,
+                       addPerms:    ed.addPerms    || null,
+                       denyPerms:   ed.denyPerms   || null,
+                       allowedCats: ed.allowedCats || null };
+        // Use engine function for access check (accepts manage_users OR manage_roles OR *)
+        if (canAccessRbacPanel(sess, roles)) {
+          matched = sess;
         } else {
           err.textContent = '🚫 صلاحياتك لا تسمح بالوصول إلى هذه الصفحة';
           btn.textContent = 'دخول ←'; btn.disabled = false; return;

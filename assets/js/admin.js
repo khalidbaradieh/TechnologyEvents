@@ -6,6 +6,12 @@
 
 import { FIREBASE_CONFIG, DB, VERSION, STORE } from '/config.js';
 import {
+  DEFAULT_ROLES   as _ENGINE_DEFAULT_ROLES,
+  PERM_PAGE_MAP   as _ENGINE_PERM_PAGE_MAP,
+  NEWS_SUBTAB_PERMS as _ENGINE_NEWS_SUBTAB_PERMS,
+  getEffectivePerms as _engineGetEffectivePerms,
+} from '/assets/js/rbac-engine.js';
+import {
   initAdminSections, addSection, updateSection, deleteSection,
   toggleSectionActive, getSectionsCache,
   getCheckedCustomSections, setCustomSectionCheckboxes, resetCustomSectionCheckboxes,
@@ -345,7 +351,10 @@ function doLogin() {
       username:     u,
       name:         displayName,
       roleId:       rbacRoleId,
-      customPerms:  editorObj ? (editorObj.customPerms || null) : null,
+      customPerms:  editorObj ? (editorObj.customPerms  || null) : null,
+      addPerms:     editorObj ? (editorObj.addPerms     || null) : null,
+      denyPerms:    editorObj ? (editorObj.denyPerms    || null) : null,
+      allowedCats:  editorObj ? (editorObj.allowedCats  || null) : null,
       loginAt:      Date.now(),
       lastActivity: Date.now(),
     };
@@ -389,59 +398,14 @@ function doLogout() {
 // Single source of truth: RBAC session from atq_rbac_user (set by rbac.html + doLogin).
 // Legacy Arabic roles are mapped to RBAC roleIds on login for backward compat.
 
-// Built-in role defaults — mirrors rbac.html DEFAULT_ROLES exactly
-const _RBAC_FALLBACK_ROLES = [
-  { id:'manager',    level:100, perms:['*'] },
-  { id:'admin',      level:80,  perms:['add_articles','edit_articles','edit_any_article',
-    'delete_articles','publish_articles','approve_articles','review_articles',
-    'schedule_articles','import_articles','ai_generate',
-    'manage_homepage','manage_cats','manage_breaking','manage_ticker',
-    'manage_ads','manage_nav','manage_identity',
-    'manage_users','view_analytics','view_reports','view_audit_log',
-    'manage_emails','manage_inbox'] },
-  { id:'editor',     level:60,  perms:['add_articles','edit_articles','edit_any_article',
-    'publish_articles','approve_articles','review_articles','schedule_articles',
-    'ai_generate','manage_homepage','manage_breaking','manage_ticker',
-    'view_analytics','view_audit_log'] },
-  { id:'supervisor', level:50,  perms:['add_articles','edit_articles','edit_any_article',
-    'review_articles','view_analytics'] },
-  { id:'writer',     level:40,  perms:['add_articles','edit_articles'] },
-  { id:'viewer',     level:20,  perms:['view_analytics','view_reports'] },
-];
+// Built-in role defaults — imported from rbac-engine.js (single source of truth)
+const _RBAC_FALLBACK_ROLES = _ENGINE_DEFAULT_ROLES;
 
-// RBAC permission → admin page IDs
-const RBAC_PAGE_MAP = {
-  add_articles:     ['news'],
-  edit_articles:    ['news'],
-  edit_any_article: ['news'],
-  delete_articles:  ['news'],
-  publish_articles: ['news','custom-sections'],
-  review_articles:  ['news','approval-queue'],
-  approve_articles: ['news','approval-queue'],
-  schedule_articles:['news'],
-  import_articles:  ['news'],
-  ai_generate:      ['news'],
-  manage_homepage:  ['pagecontrols','general-settings'],
-  manage_cats:      ['categories'],
-  manage_breaking:  ['breaking'],
-  manage_ticker:    ['latest'],
-  manage_ads:       ['ads-manager'],
-  manage_nav:       ['nav-links-manager'],
-  manage_identity:  ['identity','footer-control'],
-  manage_users:     ['editors'],
-  view_analytics:   ['analytics'],
-  view_reports:     ['analytics'],
-  view_audit_log:   ['analytics'],
-  system_settings:  ['settings'],
-  manage_emails:    ['subscribers'],
-  manage_inbox:     ['inbox'],
-};
+// RBAC permission → admin page IDs — imported from rbac-engine.js
+const RBAC_PAGE_MAP = _ENGINE_PERM_PAGE_MAP;
 
-// News sub-tab permissions
-const NEWS_SUBTAB_PERMS = {
-  'ai-news':    ['ai_generate','approve_articles'],
-  'fetch-news': ['import_articles','approve_articles'],
-};
+// News sub-tab permissions — imported from rbac-engine.js
+const NEWS_SUBTAB_PERMS = _ENGINE_NEWS_SUBTAB_PERMS;
 
 // ── Workflow status definitions ─────────────────────────────────
 // Each status maps to: who can set it, badge color, and display label
@@ -564,11 +528,9 @@ function _loadRbacSession() {
 }
 
 // Get effective permissions for a session
+// Delegates to rbac-engine.js for consistent addPerms/denyPerms/customPerms logic.
 function _getEffectivePerms(session, roles) {
-  if (!session || !session.roleId) return [];
-  if (session.customPerms) return session.customPerms;
-  const role = roles.find(r => r.id === session.roleId);
-  return role ? (role.perms || []) : [];
+  return _engineGetEffectivePerms(session, roles);
 }
 
 // Check if current session has a given permission
