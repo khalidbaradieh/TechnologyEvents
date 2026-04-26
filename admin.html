@@ -10,6 +10,8 @@
 
 </head>
 <body>
+<!-- ★ Early theme — runs synchronously before first paint to prevent dark flash ★ -->
+<script>(function(){try{if(localStorage.getItem('atq_admin_theme')!=='dark')document.body.classList.add('light');}catch(e){}}());</script>
 
 <!-- ══════════════════════════════
      LOGIN SCREEN
@@ -76,10 +78,7 @@
         <a class="nav-item" onclick="showPage('categories', this)" data-page="categories">
           <span class="nav-icon">🏷️</span> الأقسام والتصنيفات
         </a>
-        <!-- Fix: Custom Sections — new feature -->
-        <a class="nav-item" onclick="showPage('custom-sections', this)" data-page="custom-sections" data-perm="publish_articles">
-          <span class="nav-icon">🗂️</span> أقسام الأخبار
-        </a>
+        <!-- Fix: Custom Sections moved to الموقع section, below الهوية والتخطيط -->
         <a class="nav-item" onclick="showPage('latest', this)" data-page="latest">
           <span class="nav-icon">🗞️</span> شريط آخر الأخبار
         </a>
@@ -91,6 +90,9 @@
         <div class="nav-section-title">الموقع</div>
         <a class="nav-item" onclick="showPage('identity', this)" data-page="identity">
           <span class="nav-icon">🎨</span> الهوية والتخطيط
+        </a>
+        <a class="nav-item" onclick="showPage('custom-sections', this)" data-page="custom-sections" data-perm="manage_sections">
+          <span class="nav-icon">🗂️</span> أقسام الأخبار
         </a>
         <a class="nav-item" onclick="showPage('pagecontrols', this)" data-page="pagecontrols">
           <span class="nav-icon">🎛️</span> تحكم في الصفحة
