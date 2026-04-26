@@ -38,6 +38,7 @@ import { scrollTrending }                       from '/assets/js/site-news-rende
 import { checkBreaking, closeBreaking }         from '/assets/js/site-breaking.js';
 import { _startTickerRAF, applyTickerSpeed }    from '/assets/js/site-ticker.js';
 import { _applyAdBanner, _applyCustomBanners }  from '/assets/js/site-ads.js';
+import { renderCustomSections }                  from '/assets/js/site-sections.js';
 import {
   toggleTheme, toggleLang, applySiteButtons,
   scrollToTop, toggleMobileNav, _closeMobileNav,
@@ -57,7 +58,12 @@ import {
 let _renderTimer = null;
 function _scheduleRender() {
   clearTimeout(_renderTimer);
-  _renderTimer = setTimeout(renderSite, 16);
+  _renderTimer = setTimeout(() => {
+    renderSite();
+    // Re-render custom sections with updated news data
+    const cs = _fb.site && _fb.site.custom_sections;
+    if (cs) setTimeout(() => renderCustomSections(cs), 50);
+  }, 16);
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -197,6 +203,8 @@ function startFirebaseListeners() {
     if (s.ad_allnews) { window._adAllnewsData = s.ad_allnews; _applyAdBanner('allnews', s.ad_allnews); }
     if (s.ad_article) window._adArticleData = s.ad_article;
     if (s.custom_banners) _applyCustomBanners(s.custom_banners);
+    // Custom news sections (اقسام الاخبار)
+    if (s.custom_sections) renderCustomSections(s.custom_sections);
 
     // If an article is open, refresh its interaction buttons + related news
     if (document.getElementById('article-page')?.style.display === 'block') {

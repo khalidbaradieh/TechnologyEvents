@@ -5,6 +5,11 @@
 // ================================================================
 
 import { FIREBASE_CONFIG, DB, VERSION, STORE } from '/config.js';
+import {
+  initAdminSections, addSection, updateSection, deleteSection,
+  toggleSectionActive, getSectionsCache,
+  getCheckedCustomSections, setCustomSectionCheckboxes, resetCustomSectionCheckboxes,
+} from '/assets/js/admin-sections.js';
 import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, updateDoc, onSnapshot, query, orderBy }
          from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -409,7 +414,7 @@ const RBAC_PAGE_MAP = {
   edit_articles:    ['news'],
   edit_any_article: ['news'],
   delete_articles:  ['news'],
-  publish_articles: ['news'],
+  publish_articles: ['news','custom-sections'],
   review_articles:  ['news','approval-queue'],
   approve_articles: ['news','approval-queue'],
   schedule_articles:['news'],
@@ -581,9 +586,9 @@ function _getRbacAllowedPages() {
   if (session.roleId === 'manager') return null;
   const roles = _loadRoles();
   const perms = _getEffectivePerms(session, roles);
-  if (!perms || !perms.length) return ['overview'];
+  if (!perms || !perms.length) return ['analytics'];
   if (perms.includes('*')) return null;
-  const pages = new Set(['overview']);
+  const pages = new Set(['analytics']);
   perms.forEach(p => { (RBAC_PAGE_MAP[p] || []).forEach(pg => pages.add(pg)); });
   return [...pages];
 }
@@ -796,6 +801,9 @@ function initDashboard() {
   // Fix 5: populate overview with real data after Firebase loads
   setTimeout(loadAnalytics, 800);
   setTimeout(buildChart, 850);
+  // Show analytics as first page after login
+  const analyticsNav = document.querySelector('.nav-item[data-page="analytics"]');
+  if (analyticsNav && typeof showPage === 'function') showPage('analytics', analyticsNav);
   // Change 7: default to light theme unless user has explicitly chosen dark
   if (localStorage.getItem('atq_admin_theme') !== 'dark') {
     document.body.classList.add('light');
@@ -823,6 +831,7 @@ const PAGE_TITLES = {
   'ads-manager':       ['إدارة الإعلانات',         'تفعيل وتخصيص جميع البانرات الإعلانية'],
   'nav-links-manager': ['روابط القائمة الرئيسية',  'إدارة روابط شريط التنقل العلوي'],
   analytics:           ['إحصائيات المحتوى',        'تحليل أداء الأخبار والمحررين والمشتركين'],
+  'custom-sections':   ['أقسام الأخبار',            'إدارة الأقسام المخصصة وطريقة عرضها على الموقع'],
   subscribers:         ['المشتركون',               'قائمة بريد المشتركين في النشرة الإخبارية'],
   inbox:               ['صندوق الرسائل',           'رسائل الزوار من نموذج تواصل معنا'],
 };
@@ -853,6 +862,7 @@ function showPage(id, el) {
   if (id === 'footer-control') { renderFooterColEditor('company'); renderFooterColEditor('more'); renderSocialMedia(); loadPageControls(); }
   if (id === 'ads-manager') { renderAdsManager(); loadLayoutSettings(); }
   if (id === 'nav-links-manager') renderNavMenuEditor();
+  if (id === 'custom-sections') { if (typeof initAdminSections === 'function') initAdminSections(); }
   if (id === 'general-settings') { loadInteractionToggles(); loadCommentsControl(); }
   if (id === 'identity') { loadIdentitySettings(); loadLayoutSettings(); loadMaintenance(); }
   if (id === 'inbox') { loadInboxMessages(); loadInboxForwarding(); }
@@ -1486,6 +1496,8 @@ function resetNewsForm() {
   ['n-also-trending','n-also-featured'].forEach(id => {
     const el = document.getElementById(id); if (el) el.checked = false;
   });
+  // Reset custom section checkboxes
+  if (typeof resetCustomSectionCheckboxes === 'function') resetCustomSectionCheckboxes(getSectionsCache());
   // Reset metadata-visibility toggles
   ['n-show-author','n-show-date','n-show-views'].forEach(id => {
     const el = document.getElementById(id); if (el) el.checked = true;
@@ -1606,6 +1618,8 @@ function saveNews() {
     // Change 3: alsoBreaking + alsoHero removed from UI, default false
     alsoBreaking: false,
     alsoHero:     false,
+    // Custom sections: spread in the per-section flags (section_<id>: true/false)
+    ...getCheckedCustomSections(getSectionsCache()),
     showAuthor:   chk('n-show-author'),
     showDate:     chk('n-show-date'),
     showViews:    chk('n-show-views'),
@@ -1740,6 +1754,8 @@ function editNews(id) {
   setChk('n-also-trending', n.alsoTrending);
   setChk('n-also-featured', n.alsoFeatured);
   // Change 3: alsoBreaking + alsoHero removed from UI
+  // Load custom section state for this article
+  if (typeof setCustomSectionCheckboxes === 'function') setCustomSectionCheckboxes(n, getSectionsCache());
   // Load metadata-visibility flags (undefined defaults to true = shown)
   setChk('n-show-author', n.showAuthor !== false);
   setChk('n-show-date',   n.showDate   !== false);
@@ -2246,7 +2262,7 @@ function loadAnalytics() {
   const scheduled = newsData.filter(n => n.status === 'مجدول');
   const rejected = newsData.filter(n => n.status === 'مرفوض');
 
-  // Fix 5: populate all stat IDs (overview + analytics unified)
+  // Unified stat setter — writes to any element by ID
   const _s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   _s('an-total-news',    newsData.length);
   _s('an-pub-news',      pub.length);
@@ -2254,26 +2270,6 @@ function loadAnalytics() {
   _s('an-pending-news',  pending.length);
   _s('an-scheduled-news',scheduled.length);
   _s('an-drafts-news',   drafts.length);
-  // Overview aliases (ov-stat-* IDs still used on overview page)
-  _s('ov-stat-total',     newsData.length);
-  _s('ov-stat-published', pub.length);
-  _s('ov-stat-pending',   pending.length);
-  _s('ov-stat-scheduled', scheduled.length);
-  _s('ov-stat-editors',   editorsData.length);
-  _s('ov-stat-drafts',    drafts.length);
-
-  document.getElementById('an-total-news').textContent = newsData.length;
-  document.getElementById('an-pub-news').textContent   = pub.length;
-  document.getElementById('an-editors').textContent    = editorsData.length;
-
-  // Update overview stat boxes with real data
-  const _setStat = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  _setStat('ov-stat-total',     newsData.length);
-  _setStat('ov-stat-published', pub.length);
-  _setStat('ov-stat-pending',   pending.length);
-  _setStat('ov-stat-scheduled', scheduled.length);
-  _setStat('ov-stat-editors',   editorsData.length);
-  _setStat('ov-stat-drafts',    drafts.length);
 
   // Rebuild recent activity from real news data (last 8 published)
   const recentNews = [...pub].sort((a,b) => Number(b.id||0)-Number(a.id||0)).slice(0, 8);

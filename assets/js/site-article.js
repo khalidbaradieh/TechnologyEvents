@@ -343,7 +343,7 @@ function _refreshLikeUI(count) {
   const heart = document.getElementById('like-heart');
   const btn   = document.getElementById('like-btn');
   if (lc)    lc.textContent    = toArabicDigits(n > 0 ? formatCount(n) : '٠');
-  if (heart) heart.textContent  = liked ? '❤️' : '🤍';
+  if (heart) heart.textContent  = '👍'; // hand emoji always shown, liked state shown via btn.classList
   if (btn)   btn.classList.toggle('liked', liked);
 }
 
@@ -371,7 +371,7 @@ export async function toggleArticleLike() {
   // Animate heart on like
   if (!liked) {
     const heart = document.getElementById('like-heart');
-    if (heart) { heart.style.transform = 'scale(1.5)'; setTimeout(() => heart.style.transform = '', 200); }
+    if (heart) { heart.style.transform = 'scale(1.3)'; setTimeout(() => heart.style.transform = '', 180); }
   }
 
   // Persist to Firebase
