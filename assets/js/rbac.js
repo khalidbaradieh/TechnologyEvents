@@ -64,6 +64,51 @@ function hasPerm(permId, user) {
   return perms.includes('*') || perms.includes(permId);
 }
 
+// ─── SECURITY HELPERS ─────────────────────────────────────────
+// Single source for all role-scope checks throughout the file.
+
+/** True only when curUser is the root manager (wildcard access). */
+function _isManager() {
+  return curUser?.roleId === 'manager';
+}
+
+/** Numeric level of curUser's role. */
+function _myLevel() {
+  return rbacRoles.find(r => r.id === curUser?.roleId)?.level || 0;
+}
+
+/**
+ * Can curUser edit a given role object?
+ * Rules:
+ *  - manager  : any non-protected role
+ *  - manage_roles user : only roles STRICTLY below own level, never protected
+ */
+function _canEditRole(role) {
+  if (!curUser || !role) return false;
+  if (role.protected) return false;
+  if (_isManager()) return true;
+  if (!hasPerm('manage_roles')) return false;
+  return role.level < _myLevel();
+}
+
+/**
+ * Can curUser see a given role column in the matrix?
+ * manager sees all; manage_roles user sees only lower-level roles.
+ */
+function _canSeeRoleInMatrix(role) {
+  if (_isManager()) return true;
+  return role.level < _myLevel();
+}
+
+/**
+ * Strip manage_roles from a perms array unless curUser is manager.
+ * A manage_roles user can delegate anything EXCEPT manage_roles itself.
+ */
+function _sanitizePerms(perms) {
+  if (_isManager()) return perms;
+  return perms.filter(p => p !== 'manage_roles');
+}
+
 // ─── FIREBASE ─────────────────────────────────────────────────
 async function loadData() {
   // Load roles
@@ -253,28 +298,42 @@ function renderRoles() {
 }
 
 function renderMatrix() {
-  const roles  = [...rbacRoles].sort((a,b) => b.level - a.level);
-  const groups = [...new Set(PERMISSIONS.map(p => p.group))];
-  const draft  = matrixDraft || {};
-  const canEditMatrix = curUser ? (curUser.roleId === 'manager' || hasPerm('manage_roles')) : false;
+  // Only roles the current user is allowed to SEE (lower level than self, or all for manager)
+  const allRoles     = [...rbacRoles].sort((a,b) => b.level - a.level);
+  const visibleRoles = allRoles.filter(r => _canSeeRoleInMatrix(r));
+  const groups       = [...new Set(PERMISSIONS.map(p => p.group))];
+  const draft        = matrixDraft || {};
+  const canEditMatrix = _isManager() || hasPerm('manage_roles');
 
   if (canEditMatrix) {
     document.getElementById('matrix-edit-btn').style.display = '';
     document.getElementById('matrix-edit-hint').textContent = matrixEditing ? 'وضع التعديل نشط — انقر على ✅/❌ لتغيير الصلاحية' : '';
+  } else {
+    document.getElementById('matrix-edit-btn').style.display = 'none';
+  }
+
+  if (!visibleRoles.length) {
+    document.getElementById('matrix-tbody').innerHTML =
+      '<tr><td colspan="2" style="padding:24px;text-align:center;color:var(--text-dim)">لا توجد أدوار ضمن نطاق صلاحياتك</td></tr>';
+    return;
   }
 
   let html = `<tr><th style="text-align:right;min-width:180px">الصلاحية</th>` +
-    roles.map(r => `<th><span style="color:${r.color}">${r.icon}</span><br>${r.name}</th>`).join('') + '</tr>';
+    visibleRoles.map(r => `<th><span style="color:${r.color}">${r.icon}</span><br>${r.name}</th>`).join('') + '</tr>';
 
   groups.forEach(grp => {
-    html += `<tr class="group-row"><td colspan="${roles.length + 1}">◆ ${grp}</td></tr>`;
+    html += `<tr class="group-row"><td colspan="${visibleRoles.length + 1}">◆ ${grp}</td></tr>`;
     PERMISSIONS.filter(p => p.group === grp).forEach(p => {
-      html += `<tr><td class="perm-label">${p.icon} ${p.label}</td>`;
-      roles.forEach(r => {
-        const rPerms = matrixEditing ? (draft[r.id] || r.perms) : r.perms;
-        const has    = rPerms.includes('*') || rPerms.includes(p.id);
-        const sym    = has ? '✅' : '❌';
-        if (matrixEditing && !r.protected) {
+      // manage_roles row: only editable by manager
+      const isManageRolesPerm = p.id === 'manage_roles';
+      html += `<tr><td class="perm-label">${p.icon} ${p.label}${isManageRolesPerm && !_isManager() ? ' <span style="font-size:10px;color:var(--text-dim)">(للمدير العام فقط)</span>' : ''}</td>`;
+      visibleRoles.forEach(r => {
+        const rPerms    = matrixEditing ? (draft[r.id] || r.perms) : r.perms;
+        const has       = rPerms.includes('*') || rPerms.includes(p.id);
+        const sym       = has ? '✅' : '❌';
+        // Cell is editable only if: editing mode is on AND role is below my level AND not manage_roles (unless manager)
+        const cellEditable = matrixEditing && _canEditRole(r) && !(isManageRolesPerm && !_isManager());
+        if (cellEditable) {
           html += `<td><span class="perm-check editable" data-role="${r.id}" data-perm="${p.id}" onclick="toggleMatrixCell('${r.id}','${p.id}')">${sym}</span></td>`;
         } else {
           html += `<td><span class="perm-check">${sym}</span></td>`;
@@ -400,16 +459,23 @@ function buildPermsList(selected, enabled, addSelected, denySelected) {
   const addSet  = new Set(addSelected);
   const denySet = new Set(denySelected);
   const grps    = [...new Set(PERMISSIONS.map(p => p.group))];
-  let html = '';
 
-  // ── Override permissions (legacy) ────────────────────────────
+  // Helper: render one permission row with optional manage_roles lock
+  function _permRow(p, cbClass, isChecked, isEnabled, accentColor) {
+    const isProtected = p.id === 'manage_roles' && !_isManager();
+    const disabled    = isProtected || !isEnabled;
+    return `<label class="check-row" ${isProtected ? 'title="فقط المدير العام يمكنه منح هذه الصلاحية"' : ''} style="${isProtected ? 'opacity:0.45;cursor:not-allowed' : ''}">
+      <input type="checkbox" class="${cbClass}" value="${p.id}" ${isChecked ? 'checked' : ''} ${disabled ? 'disabled' : ''} style="accent-color:${accentColor}">
+      <span style="font-size:12px">${p.icon} ${p.label}${isProtected ? ' 🔒' : ''}</span>
+    </label>`;
+  }
+
+  // ── Override permissions (customPerms) ────────────────────────
+  let html = '';
   grps.forEach(g => {
     html += `<div class="section-label" style="grid-column:1/-1">${g}</div>`;
     PERMISSIONS.filter(p => p.group === g).forEach(p => {
-      html += `<label class="check-row">
-        <input type="checkbox" class="perm-custom-cb" value="${p.id}" ${set.has(p.id) ? 'checked' : ''} ${enabled ? '' : 'disabled'} style="accent-color:var(--gold)">
-        <span>${p.icon} ${p.label}</span>
-      </label>`;
+      html += _permRow(p, 'perm-custom-cb', set.has(p.id), enabled, 'var(--gold)');
     });
   });
   document.getElementById('u-perms-list').innerHTML = html;
@@ -423,10 +489,7 @@ function buildPermsList(selected, enabled, addSelected, denySelected) {
     grps.forEach(g => {
       addHtml += `<div class="section-label" style="grid-column:1/-1;font-size:11px;color:var(--green)">${g}</div>`;
       PERMISSIONS.filter(p => p.group === g).forEach(p => {
-        addHtml += `<label class="check-row">
-          <input type="checkbox" class="perm-add-cb" value="${p.id}" ${addSet.has(p.id) ? 'checked' : ''} style="accent-color:var(--green)">
-          <span style="font-size:12px">${p.icon} ${p.label}</span>
-        </label>`;
+        addHtml += _permRow(p, 'perm-add-cb', addSet.has(p.id), true, 'var(--green)');
       });
     });
     addEl.innerHTML = addHtml;
@@ -439,6 +502,7 @@ function buildPermsList(selected, enabled, addSelected, denySelected) {
     grps.forEach(g => {
       denyHtml += `<div class="section-label" style="grid-column:1/-1;font-size:11px;color:var(--red)">${g}</div>`;
       PERMISSIONS.filter(p => p.group === g).forEach(p => {
+        // manage_roles: non-managers CAN deny it (denying is always safe); only granting is restricted
         denyHtml += `<label class="check-row">
           <input type="checkbox" class="perm-deny-cb" value="${p.id}" ${denySet.has(p.id) ? 'checked' : ''} style="accent-color:var(--red)">
           <span style="font-size:12px">${p.icon} ${p.label}</span>
@@ -491,15 +555,25 @@ async function saveUser() {
   const active = document.getElementById('u-active').checked;
   const role   = rbacRoles.find(r => r.id === _uSelectedRole) || rbacRoles[rbacRoles.length - 1];
 
+  // Security: non-manager cannot assign a role at or above their own level
+  if (!_isManager() && role.level >= _myLevel()) {
+    toast('🚫 لا يمكنك تعيين دور مساوٍ أو أعلى من مستواك');
+    return;
+  }
+
   const allowedCats = Array.from(document.querySelectorAll('#u-cats-list input:checked')).map(c => c.value);
   const useCustom   = document.getElementById('u-use-custom-perms').checked;
-  const customPerms = useCustom
+  let   customPerms = useCustom
     ? Array.from(document.querySelectorAll('.perm-custom-cb:checked')).map(c => c.value)
     : null;
 
-  // New: addPerms and denyPerms
-  const addPerms  = Array.from(document.querySelectorAll('.perm-add-cb:checked')).map(c => c.value);
+  // addPerms and denyPerms
+  let addPerms  = Array.from(document.querySelectorAll('.perm-add-cb:checked')).map(c => c.value);
   const denyPerms = Array.from(document.querySelectorAll('.perm-deny-cb:checked')).map(c => c.value);
+
+  // Security: strip manage_roles from any perm list if editor is not manager
+  if (customPerms) customPerms = _sanitizePerms(customPerms);
+  addPerms = _sanitizePerms(addPerms);
 
   const colors = ['#C9A84C','#4A9EFF','#A078FF','#3DDC84','#FF5252','#FF9A3C','#40C8F0'];
 
@@ -507,11 +581,17 @@ async function saveUser() {
     const idx = users.findIndex(u => u.id == eid);
     if (idx !== -1) {
       const existing = users[idx];
+      // Security: non-manager cannot edit users at/above their own level
+      const existingRole = rbacRoles.find(r => r.id === existing.roleId);
+      if (!_isManager() && existingRole && existingRole.level >= _myLevel()) {
+        toast('🚫 لا يمكنك تعديل هذا المستخدم — رتبته مساوية أو أعلى من رتبتك');
+        return;
+      }
       users[idx] = {
         ...existing,
         name, user: uname, email,
         roleId:      _uSelectedRole,
-        role:        role.name,  // keep old field for compat
+        role:        role.name,
         active,
         allowedCats,
         customPerms,
@@ -548,7 +628,6 @@ async function saveUser() {
   await saveUsers();
   closeUserModal();
   renderUsers(); renderStats();
-  // Notify parent to refresh author list
   window.parent.postMessage({ type:'rbac:users_updated' }, '*');
 }
 window.saveUser = saveUser;
@@ -589,6 +668,11 @@ window.openRoleModal = function() {
 
 window.editRole = function(roleId) {
   const r = rbacRoles.find(x => x.id === roleId); if (!r) return;
+  // Security: can only edit roles strictly below own level (unless manager)
+  if (!_canEditRole(r)) {
+    toast('🚫 لا يمكنك تعديل هذا الدور — يساويك أو يفوقك في الصلاحيات');
+    return;
+  }
   document.getElementById('r-edit-id').value = roleId;
   document.getElementById('r-name').value    = r.name;
   document.getElementById('r-level').value   = r.level;
@@ -607,7 +691,12 @@ function buildRolePermsGrid(selected) {
   grps.forEach(g => {
     html += `<div class="section-label" style="grid-column:1/-1">${g}</div>`;
     PERMISSIONS.filter(p => p.group === g).forEach(p => {
-      html += `<label class="check-row"><input type="checkbox" value="${p.id}" ${set.has(p.id) ? 'checked' : ''} style="accent-color:var(--gold)"><span>${p.icon} ${p.label}</span></label>`;
+      // manage_roles: only manager can grant; others see it locked
+      const isProtectedPerm = p.id === 'manage_roles' && !_isManager();
+      html += `<label class="check-row" ${isProtectedPerm ? 'title="فقط المدير العام يمكنه منح هذه الصلاحية"' : ''} style="${isProtectedPerm ? 'opacity:0.45;cursor:not-allowed' : ''}">
+        <input type="checkbox" value="${p.id}" ${set.has(p.id) ? 'checked' : ''} ${isProtectedPerm ? 'disabled' : ''} style="accent-color:var(--gold)">
+        <span>${p.icon} ${p.label}${isProtectedPerm ? ' 🔒' : ''}</span>
+      </label>`;
     });
   });
   document.getElementById('r-perms-grid').innerHTML = html;
@@ -616,15 +705,30 @@ function buildRolePermsGrid(selected) {
 window.saveRole = async function() {
   const eid   = document.getElementById('r-edit-id').value;
   const name  = document.getElementById('r-name').value.trim();
-  const level = parseInt(document.getElementById('r-level').value) || 50;
+  let   level = parseInt(document.getElementById('r-level').value) || 50;
   const icon  = document.getElementById('r-icon').value.trim() || '🔰';
   const color = document.getElementById('r-color').value;
   const desc  = document.getElementById('r-desc').value.trim();
-  const perms = Array.from(document.querySelectorAll('#r-perms-grid input:checked')).map(c => c.value);
+  let   perms = Array.from(document.querySelectorAll('#r-perms-grid input:checked')).map(c => c.value);
   if (!name) { toast('⚠️ أدخل اسم الدور'); return; }
 
+  // Security: strip manage_roles if editor is not manager
+  perms = _sanitizePerms(perms);
+
+  // Security: non-manager cannot create/set a role at or above their own level
+  if (!_isManager()) {
+    const cap = _myLevel() - 1;
+    if (level >= _myLevel()) {
+      level = cap;
+      toast('⚠️ تم تعديل المستوى — لا يمكنك إنشاء دور بمستوى مساوٍ أو أعلى من مستواك');
+    }
+  }
+
   if (eid) {
-    const idx = rbacRoles.findIndex(r => r.id === eid);
+    const r = rbacRoles.find(x => x.id === eid);
+    // Security: can only save roles strictly below own level
+    if (!_canEditRole(r)) { toast('🚫 لا يمكنك تعديل هذا الدور'); return; }
+    const idx = rbacRoles.findIndex(x => x.id === eid);
     if (idx !== -1) { rbacRoles[idx] = { ...rbacRoles[idx], name, level, icon, color, desc, perms }; }
     logActivity('perm', `تعديل الدور: ${name}`);
     toast('✅ تم تحديث الدور');
@@ -655,9 +759,19 @@ window.toggleMatrixEdit = function() {
 };
 
 window.toggleMatrixCell = function(roleId, permId) {
+  const targetRole = rbacRoles.find(r => r.id === roleId);
+  // Security: must be able to edit the target role
+  if (!_canEditRole(targetRole)) {
+    toast('🚫 لا يمكنك تعديل صلاحيات هذا الدور');
+    return;
+  }
+  // Security: only manager can grant/revoke manage_roles
+  if (permId === 'manage_roles' && !_isManager()) {
+    toast('🚫 فقط المدير العام يمكنه منح صلاحية إدارة الأدوار');
+    return;
+  }
   if (!matrixDraft) matrixDraft = {};
-  const role = rbacRoles.find(r => r.id === roleId);
-  if (!matrixDraft[roleId]) matrixDraft[roleId] = [...(role?.perms || [])].filter(p => p !== '*');
+  if (!matrixDraft[roleId]) matrixDraft[roleId] = [...(targetRole?.perms || [])].filter(p => p !== '*');
   const idx = matrixDraft[roleId].indexOf(permId);
   if (idx === -1) matrixDraft[roleId].push(permId);
   else            matrixDraft[roleId].splice(idx, 1);
@@ -668,7 +782,11 @@ window.saveMatrix = async function() {
   if (!matrixDraft) return;
   Object.entries(matrixDraft).forEach(([roleId, perms]) => {
     const r = rbacRoles.find(x => x.id === roleId);
-    if (r && !r.protected) r.perms = perms;
+    // Only save changes to roles the user is allowed to edit
+    if (r && _canEditRole(r)) {
+      // Strip manage_roles if the editor is not the manager
+      r.perms = _sanitizePerms(perms);
+    }
   });
   await saveRoles();
   matrixEditing = false; matrixDraft = null;
